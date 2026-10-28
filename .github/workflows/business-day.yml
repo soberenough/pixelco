@@ -1,0 +1,63 @@
+name: PixelCo business day
+
+# Runs only on its schedule or your "Run workflow" click. It never runs on
+# pull requests or on pushes, so nothing pushed to the inbox branch can
+# change or trigger this code. Scheduled runs always use main's copy of it.
+on:
+  schedule:
+    - cron: "17 14 * * *"   # daily, 10:17am New York (EDT); 9:17am in winter
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency: { group: pixelco, cancel-in-progress: false }
+
+jobs:
+  work:
+    runs-on: ubuntu-latest
+    environment: github-pages
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+        with: { fetch-depth: 1 }
+      - uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55   # v5.5.0
+        with: { python-version: "3.12" }
+      - run: pip install requests==2.32.3 PyYAML==6.0.2
+
+      - name: Open the vault (private state + paid downloads)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+        with:
+          repository: soberenough/pixelco-vault
+          token: ${{ secrets.VAULT_TOKEN }}
+          path: vault
+      - run: mkdir -p site/dl vault/dl && cp -r vault/dl/. site/dl/
+
+      - name: Run one business day
+        env:
+          STRIPE_KEY: ${{ secrets.STRIPE_KEY }}
+          PIXELCO_STATE: vault/state.json
+        run: python -m pixelco.run
+
+      - name: Save public pages
+        run: |
+          git config user.name "pixelco-bot"
+          git config user.email "pixelco-bot@users.noreply.github.com"
+          git add site
+          git commit -q -m "Business day $(jq .cycle vault/state.json)" || echo "no page changes"
+          git push
+      - name: Save private state and downloads to the vault
+        working-directory: vault
+        run: |
+          cp -r ../site/dl/. dl/
+          git config user.name "pixelco-bot"
+          git config user.email "pixelco-bot@users.noreply.github.com"
+          git add state.json dl
+          git commit -q -m "Business day $(jq .cycle state.json)" || echo "no vault changes"
+          git push
+      - run: rm -rf vault
+
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa   # v3.0.1
+        with: { path: site }
+      - uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e   # v4.0.5

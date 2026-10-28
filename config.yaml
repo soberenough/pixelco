@@ -1,0 +1,17 @@
+# PixelCo configuration. This file is public. Secrets never go here:
+# they live in GitHub repository secrets (STRIPE_KEY, VAULT_TOKEN).
+
+site_url: "https://soberenough.github.io/pixelco"
+contact_email: ""          # shown publicly on the Contact page
+
+stripe:
+  managed_payments: true   # Stripe is merchant of record (tax, fraud, disputes)
+  fees:                    # used to estimate what reaches your bank
+    percent: 0.064         # 2.9% card + 3.5% Managed Payments
+    fixed: 0.30
+  support_link_id: ""      # optional: a tip Payment Link id (plink_...)
+
+strategy:
+  kill_after: 12           # items with no sales before a lane is shut down
+  max_items_per_day: 8
+  explore: 0.15            # share of daily slots that test every live lane

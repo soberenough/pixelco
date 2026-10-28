@@ -1,0 +1,6 @@
+# Private things never go in this public repo.
+site/dl/
+vault/
+.env
+*.env
+__pycache__/

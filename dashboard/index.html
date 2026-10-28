@@ -1,0 +1,194 @@
+<title>PixelCo Office</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one night-shift office floor on top, ledger strip and lanes beneath, day log at the side. Single dark look by choice. */
+:root{
+  --floor:#1b1a2b; --wall:#26243d; --ink:#e9e4d4; --dim:#9a93b5; --line:#3a3756;
+  --coin:#f2c14e; --go:#6cc27a; --stop:#e0675b; --glow:#7fb3e6;
+  --display:"Pixelify Sans", "Courier New", monospace;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme:dark;
+}
+body{background:var(--floor);color:var(--ink);font:14px/1.5 var(--mono);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px}
+.wrap{max-width:1100px;margin:0 auto;display:grid;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px}
+h1{font:600 30px/1 var(--display);margin:0;letter-spacing:.02em}
+h2{font:600 16px/1.2 var(--display);margin:0 0 8px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim)}
+.badge{font-size:11px;padding:2px 8px;border:1px solid var(--line);color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.badge.sim{border-color:var(--coin);color:var(--coin)}
+.sub{color:var(--dim)}
+.stage{position:relative;border:2px solid var(--line);background:var(--wall);image-rendering:pixelated}
+canvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+.strip div{background:var(--floor);padding:10px 12px}
+.strip b{display:block;font:600 24px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.strip span{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.cols{grid-template-columns:minmax(0,1fr)}}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+th{font-weight:400;color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+td.n{text-align:right}
+.pill{font-size:11px;padding:1px 6px;border:1px solid}
+.pill.on{color:var(--go);border-color:var(--go)} .pill.off{color:var(--stop);border-color:var(--stop)}
+.bar{height:6px;background:var(--line)} .bar i{display:block;height:100%;background:var(--coin)}
+ol.log{list-style:none;margin:0;padding:0;max-height:320px;overflow:auto;font-size:12.5px}
+ol.log li{display:grid;grid-template-columns:86px minmax(0,1fr);gap:8px;padding:4px 0;border-bottom:1px dashed var(--line)}
+ol.log li.now{background:#2e2b4a}
+.who{color:var(--glow)}
+.empty{color:var(--dim);padding:24px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>PixelCo</h1>
+    <span class="badge" id="stageBadge">bootstrap</span>
+    <span class="badge sim" id="simBadge" hidden>simulated sample</span>
+    <span class="sub" id="dayLine">Loading the office…</span>
+  </header>
+
+  <div class="stage"><canvas id="office" width="320" height="150" aria-label="Pixel office: the agents act out the latest business day"></canvas></div>
+
+  <div class="strip">
+    <div><b id="cash">$0.00</b><span>Cash on hand</span></div>
+    <div><b id="rev">$0.00</b><span>Revenue, all time</span></div>
+    <div><b id="spend">$0.00</b><span>Spent</span></div>
+    <div><b id="items">0</b><span>Items shipped</span></div>
+    <div><b id="pace">1/day</b><span>Output</span></div>
+  </div>
+
+  <div class="cols">
+    <section>
+      <h2>Revenue lanes</h2>
+      <table><thead><tr><th>Lane</th><th>Status</th><th class="n">Items</th><th class="n">Revenue</th><th style="width:28%">Share</th></tr></thead>
+      <tbody id="lanes"></tbody></table>
+      <h2 style="margin-top:18px">Best sellers</h2>
+      <table><tbody id="best"></tbody></table>
+    </section>
+    <section>
+      <h2>Today on the floor</h2>
+      <ol class="log" id="log"></ol>
+    </section>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const money=v=>"$"+(+v||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// ---------- the floor ----------
+const AGENTS={
+  ceo:       {x:150,y:40, shirt:"#c76b9a", hair:"#3b2a20", label:"CEO"},
+  accountant:{x:40, y:40, shirt:"#f2c14e", hair:"#1d1d1d", label:"Accountant"},
+  writer:    {x:40, y:100,shirt:"#6cc27a", hair:"#8a4b2a", label:"Writer"},
+  builder:   {x:150,y:100,shirt:"#7fb3e6", hair:"#2b2b44", label:"Builder"},
+  maker:     {x:260,y:100,shirt:"#e0675b", hair:"#d9b36b", label:"Maker"},
+  marketer:  {x:260,y:40, shirt:"#b59ae8", hair:"#111",    label:"Marketer"},
+};
+const cv=$("office"),g=cv.getContext("2d");
+g.imageSmoothingEnabled=false;
+let script=[],step=0,stepT=0,bubble=null,coins=[];
+
+function px(x,y,w,h,c){g.fillStyle=c;g.fillRect(x|0,y|0,w,h)}
+function drawRoom(){
+  px(0,0,320,150,"#1b1a2b");
+  for(let y=24;y<150;y+=8)for(let x=(y/8)%2?0:8;x<320;x+=16)px(x,y,8,8,"#201f33");
+  px(0,0,320,22,"#26243d");px(0,22,320,2,"#3a3756");
+  for(const wx of [20,120,220]){px(wx,4,60,14,"#13223a");px(wx+29,4,2,14,"#3a3756");
+    for(let i=0;i<4;i++)px(wx+4+i*14,7+(i%2)*4,1,1,"#e9e4d4");}
+  px(300,6,10,12,"#2f6b3c");px(302,2,6,6,"#3f8f50");                          // plant
+}
+function drawDesk(a,working,t){
+  const {x,y}=a;
+  px(x-14,y+6,28,8,"#6b4a33");px(x-14,y+14,2,6,"#4a3324");px(x+12,y+14,2,6,"#4a3324");
+  px(x-6,y-2,12,8,"#2a2a3a");px(x-5,y-1,10,6,working?(t%20<10?"#7fb3e6":"#9fd0ff"):"#3a3e55");
+  px(x-1,y+6,2,1,"#2a2a3a");
+}
+function drawAgent(a,working,t){
+  const bob=working?((t>>3)%2):0, bx=a.x+8, by=a.y+2-bob;
+  px(bx-3,by-10,6,6,"#f0c9a0");px(bx-3,by-11,6,2,a.hair);px(bx-3,by-10,1,3,a.hair);
+  px(bx-1,by-8,1,1,"#1a1a1a");px(bx+1,by-8,1,1,"#1a1a1a");
+  px(bx-4,by-4,8,7,a.shirt);
+  if(working){px(bx-6,by-2+((t>>2)%2),2,2,"#f0c9a0");}               // typing hand
+  px(bx-3,by+3,2,4,"#2b2b44");px(bx+1,by+3,2,4,"#2b2b44");
+}
+function drawBubble(){
+  if(!bubble)return;const a=AGENTS[bubble.who];if(!a)return;
+  g.font="7px 'Pixelify Sans', monospace";
+  const txt=bubble.text.length>34?bubble.text.slice(0,33)+"…":bubble.text;
+  const w=Math.min(150,g.measureText(txt).width+8);
+  let x=Math.max(2,Math.min(318-w,a.x-w/2)),y=a.y-26;
+  px(x,y,w,12,"#e9e4d4");px(a.x+6,y+12,3,3,"#e9e4d4");
+  g.fillStyle="#1b1a2b";g.fillText(txt,x+4,y+9);
+}
+function drawCoins(){
+  coins=coins.filter(c=>c.life-->0);
+  for(const c of coins){c.y-=0.5;px(c.x,c.y,4,4,"#f2c14e");px(c.x+1,c.y+1,2,2,"#b8892a")}
+}
+function frame(t){
+  drawRoom();
+  const cur=script[step];
+  for(const [k,a] of Object.entries(AGENTS)){
+    const working=cur&&cur.who===k;
+    drawDesk(a,working,t);drawAgent(a,working,t);
+    g.font="6px 'JetBrains Mono', monospace";g.fillStyle="#9a93b5";g.fillText(a.label,a.x-12,a.y+28);
+  }
+  drawBubble();drawCoins();
+}
+let tick=0;
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function loop(){
+  tick++;
+  if(script.length&&++stepT>(reduce?240:110)){stepT=0;step=(step+1)%script.length;showStep()}
+  frame(tick);requestAnimationFrame(loop);
+}
+function showStep(){
+  const e=script[step];if(!e)return;
+  bubble={who:e.who,text:e.msg};
+  if(/^\+\$/.test(e.msg)){const a=AGENTS[e.who]||AGENTS.accountant;for(let i=0;i<5;i++)coins.push({x:a.x+i*3-4,y:a.y-8-i*2,life:60})}
+  document.querySelectorAll("#log li").forEach((li,i)=>li.classList.toggle("now",i===step));
+}
+
+// ---------- the numbers ----------
+function render(s){
+  const t=s.treasury||{};
+  $("cash").textContent=money(s.cash??(t.revenue+t.seed-t.spend));
+  $("rev").textContent=money(t.revenue);$("spend").textContent=money(t.spend);
+  $("items").textContent=(s.items||[]).length;
+  $("pace").textContent=(s.growth?.items_per_cycle||1)+"/day";
+  $("stageBadge").textContent=s.growth?.stage||"bootstrap";
+  $("simBadge").hidden=!s.demo;
+  $("dayLine").textContent=`Day ${s.cycle||0} · founded ${String(s.founded||"").slice(0,10)}`;
+
+  const lanes=Object.entries(s.lanes||{}),tot=lanes.reduce((a,[,l])=>a+l.revenue,0)||1;
+  $("lanes").innerHTML=lanes.map(([n,l])=>`<tr><td>${esc(n)}</td>
+    <td><span class="pill ${l.alive?"on":"off"}">${l.alive?"running":"shut down"}</span></td>
+    <td class="n">${l.items}</td><td class="n">${money(l.revenue)}</td>
+    <td><div class="bar"><i style="width:${(l.revenue/tot*100).toFixed(1)}%"></i></div></td></tr>`).join("")
+    ||`<tr><td colspan=5 class="empty">No lanes tried yet.</td></tr>`;
+  const best=(s.items||[]).filter(i=>i.revenue>0).sort((a,b)=>b.revenue-a.revenue).slice(0,6);
+  $("best").innerHTML=best.map(i=>`<tr><td>${esc(i.title)}</td><td class="n">${money(i.revenue)}</td></tr>`).join("")
+    ||`<tr><td class="empty">No sales yet. The first one lands here.</td></tr>`;
+
+  // replay the latest day: everything since the last "--- day" marker
+  const log=s.log||[];let start=0;
+  log.forEach((e,i)=>{if(/^--- day/.test(e.msg))start=i});
+  script=log.slice(start).slice(0,40);
+  $("log").innerHTML=script.map(e=>`<li><span class="who">${esc(e.who)}</span><span>${esc(e.msg)}</span></li>`).join("")
+    ||`<li><span class="who">ceo</span><span>Waiting for the first business day.</span></li>`;
+  step=0;showStep();
+}
+
+async function load(){
+  for(const u of ["state.json","../state.json"]){
+    try{const r=await fetch(u,{cache:"no-store"});if(r.ok){render(await r.json());return}}catch(e){}
+  }
+  $("dayLine").textContent="No company data found yet. It appears after the first business day.";
+}
+load();setInterval(load,5*60*1000);requestAnimationFrame(loop);
+</script>

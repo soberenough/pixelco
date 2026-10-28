@@ -9,6 +9,7 @@ stripe:
   fees:                    # used to estimate what reaches your bank
     percent: 0.064         # 2.9% card + 3.5% Managed Payments
     fixed: 0.30
+  tax_code: txcd_10503000   # digital documents, downloadable, permanent rights
   support_link_id: ""      # optional: a tip Payment Link id (plink_...)
 
 strategy:

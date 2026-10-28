@@ -27,6 +27,9 @@ class Stripe:
         self.fee_pct = fees.get("percent", 0.064)   # 2.9% card + 3.5% Managed Payments
         self.fee_fixed = fees.get("fixed", 0.30)
         self.support_link = cfg.get("support_link_id", "")
+        # Managed Payments requires an eligible tax code on every product.
+        # txcd_10503000: digital documents, downloadable, permanent rights.
+        self.tax_code = cfg.get("tax_code", "txcd_10503000")
 
     def _post(self, path, data, version=None):
         headers = {"Stripe-Version": version} if version else {}
@@ -38,16 +41,25 @@ class Stripe:
 
     def create_payment_link(self, item, price, redirect_url):
         try:
-            prod = self._post("products", {
-                "name": item["title"][:250],
-                "description": (item.get("description") or item["title"])[:500],
-                "metadata[pixelco_item]": item["id"],
-            })
-            pr = self._post("prices", {
-                "product": prod["id"], "currency": "usd",
-                "unit_amount": int(round(price * 100)),
-            })
-            data = {"line_items[0][price]": pr["id"], "line_items[0][quantity]": 1,
+            # Reuse what earlier attempts created, so retries don't pile up duplicates.
+            if not item.get("stripe_product"):
+                prod = self._post("products", {
+                    "name": item["title"][:250],
+                    "description": (item.get("description") or item["title"])[:500],
+                    "tax_code": self.tax_code,
+                    "metadata[pixelco_item]": item["id"],
+                })
+                item["stripe_product"] = prod["id"]
+            elif not item.get("tax_code_set"):
+                self._post(f"products/{item['stripe_product']}", {"tax_code": self.tax_code})
+            item["tax_code_set"] = True
+            if not item.get("stripe_price"):
+                pr = self._post("prices", {
+                    "product": item["stripe_product"], "currency": "usd",
+                    "unit_amount": int(round(price * 100)),
+                })
+                item["stripe_price"] = pr["id"]
+            data = {"line_items[0][price]": item["stripe_price"], "line_items[0][quantity]": 1,
                     "metadata[pixelco_item]": item["id"],
                     "after_completion[type]": "redirect",
                     "after_completion[redirect][url]": redirect_url}

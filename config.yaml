@@ -2,7 +2,7 @@
 # they live in GitHub repository secrets (STRIPE_KEY, VAULT_TOKEN).
 
 site_url: "https://soberenough.github.io/pixelco"
-contact_email: ""          # shown publicly on the Contact page
+contact_email: "PixelCo.shop@proton.me"       # shown publicly on the Contact page
 
 stripe:
   managed_payments: true   # Stripe is merchant of record (tax, fraud, disputes)

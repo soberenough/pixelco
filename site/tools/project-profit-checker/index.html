@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en"><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; form-action 'none'; base-uri 'none'"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Project Profit Checker</title>
+<style>
+:root{--bg:#fbfaf7;--card:#ffffff;--fg:#22212b;--dim:#6b6878;--line:#e4e1d8;--accent:#2f8a4c;--soft:#eef6f0;--warn:#a6551c;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#17161f;--card:#201f2b;--fg:#ebe8df;--dim:#a19db0;--line:#33313f;--accent:#4fbf74;--soft:#1f2d24;--warn:#e39a62;--bad:#f28b82}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:820px;margin:0 auto;padding:24px 16px 48px}
+h1{margin:0 0 4px;font-size:28px}
+h2{font-size:18px;margin:28px 0 10px}
+p.lead{margin:0 0 20px;color:var(--dim)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+label{display:block;font-size:14px;font-weight:600}
+label span{display:block;font-weight:400;color:var(--dim);font-size:13px}
+input,select,textarea{width:100%;margin-top:6px;padding:10px;font:inherit;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+fieldset{border:1px solid var(--line);border-radius:8px;padding:12px 14px 14px;margin:0;background:var(--card)}
+legend{font-weight:600;padding:0 6px}
+.hours{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.hours label{font-weight:500}
+button{font:inherit;padding:10px 14px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.out{margin-top:24px;padding:18px;border-radius:8px;background:var(--soft);display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.out div b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+.out div small{color:var(--dim)}
+.verdict{margin-top:16px;padding:14px 16px;border-left:4px solid var(--accent);background:var(--card);border-radius:0 8px 8px 0}
+.verdict.mid{border-color:var(--warn)}.verdict.low{border-color:var(--bad)}
+.meter{height:12px;border-radius:6px;background:var(--line);overflow:hidden;margin-top:8px}
+.meter i{display:block;height:100%;background:var(--accent);width:0}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left}
+td.n,th.n{text-align:right}
+.stack{display:flex;height:22px;border-radius:6px;overflow:hidden;margin-top:10px;border:1px solid var(--line)}
+.stack i{display:block;height:100%}
+.key{display:flex;flex-wrap:wrap;gap:10px 16px;font-size:13px;color:var(--dim);margin-top:8px}
+.key span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;background:var(--c)}
+textarea{min-height:170px;font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.note{font-size:14px;color:var(--dim);margin-top:18px}
+#copied{color:var(--accent);font-size:14px;align-self:center}
+</style></head>
+<body><main>
+<h1>Project Profit Checker</h1>
+<p class="lead">Find out what a finished project really paid you per hour once meetings, revisions, admin and fees are counted, and what you should quote next time to hit your target rate.</p>
+
+<h2>1. What you were paid</h2>
+<div class="grid">
+<label for="project">Project<input id="project" type="text" value="Brand refresh for a local bakery"></label>
+<label for="fee">Total fee billed<span>Before tax, as invoiced</span><input id="fee" type="number" min="0" step="10" value="2400"></label>
+<label for="platform">Platform or agency cut (%)<span>0 if the client paid you directly</span><input id="platform" type="number" min="0" max="100" step="0.5" value="0"></label>
+<label for="payfee">Payment fees (%)<span>Card or transfer fees</span><input id="payfee" type="number" min="0" max="20" step="0.1" value="2.9"></label>
+<label for="costs">Project costs<span>Fonts, stock, software, travel</span><input id="costs" type="number" min="0" step="5" value="85"></label>
+<label for="target">Your target hourly rate<input id="target" type="number" min="1" step="5" value="60"></label>
+</div>
+
+<h2>2. Where the time went</h2>
+<fieldset><legend>Hours, including the ones you did not bill</legend>
+<div class="hours">
+<label for="h-core">Core work<input id="h-core" type="number" min="0" step="0.25" value="26"></label>
+<label for="h-meet">Calls and meetings<input id="h-meet" type="number" min="0" step="0.25" value="5"></label>
+<label for="h-rev">Revisions<input id="h-rev" type="number" min="0" step="0.25" value="8"></label>
+<label for="h-email">Email and messages<input id="h-email" type="number" min="0" step="0.25" value="4"></label>
+<label for="h-admin">Quoting, invoicing, admin<input id="h-admin" type="number" min="0" step="0.25" value="2.5"></label>
+<label for="h-other">Travel or other<input id="h-other" type="number" min="0" step="0.25" value="0"></label>
+</div>
+</fieldset>
+<div class="bar"><button class="primary" id="calc">Check this project</button><button id="reset">Clear hours</button></div>
+
+<section id="results" aria-live="polite">
+<div class="out">
+<div><small>Effective hourly rate</small><b id="o-eff">-</b></div>
+<div><small>Kept after fees and costs</small><b id="o-net">-</b></div>
+<div><small>Total hours</small><b id="o-hrs">-</b></div>
+<div><small>Hours you could afford at target</small><b id="o-afford">-</b></div>
+</div>
+<div class="verdict" id="verdict"><strong id="v-head">-</strong><div id="v-body"></div>
+<div class="meter" role="img" id="meter-label" aria-label="Effective rate as a share of target"><i id="meter"></i></div></div>
+
+<h2>Where the hours went</h2>
+<div class="stack" id="stack"></div>
+<div class="key" id="key"></div>
+<table><thead><tr><th>Activity</th><th class="n">Hours</th><th class="n">Share</th><th class="n">Cost at target</th></tr></thead><tbody id="tbody"></tbody></table>
+
+<h2>3. Next time</h2>
+<table><tbody>
+<tr><td>Fee to hit your target with the same hours</td><td class="n" id="n-fee">-</td></tr>
+<tr><td>Fee if you cut revisions to two rounds (about half the revision time)</td><td class="n" id="n-fee2">-</td></tr>
+<tr><td>Hidden time multiplier (total hours / core work hours)</td><td class="n" id="n-mult">-</td></tr>
+</tbody></table>
+<p class="note">Use the multiplier when quoting: estimate the core work, then multiply by this number so the meetings, emails and admin are paid for.</p>
+
+<h2>Notes to copy</h2>
+<textarea id="summary" readonly aria-label="Project summary text"></textarea>
+<div class="bar"><button id="copy">Copy notes</button><span id="copied"></span></div>
+</section>
+
+<p class="note">Everything runs in your browser. Nothing you type is saved or sent anywhere. Figures are estimates for your own planning; they do not account for income tax.</p>
+</main>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var cats=[["h-core","Core work","#2f8a4c"],["h-meet","Calls and meetings","#3a6fb0"],["h-rev","Revisions","#c07a2c"],["h-email","Email and messages","#8a5bb0"],["h-admin","Quoting, invoicing, admin","#b04a6a"],["h-other","Travel or other","#7a7a7a"]];
+  function num(id){var v=parseFloat($(id).value);return isFinite(v)&&v>0?v:0}
+  function money(v){return (v<0?"-":"")+"$"+Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+  function whole(v){return "$"+Math.round(v).toLocaleString()}
+  function hrs(v){return (Math.round(v*100)/100).toLocaleString()+" h"}
+  function run(){
+    var fee=num("fee"),cut=Math.min(num("platform"),100)/100,pf=Math.min(num("payfee"),100)/100,costs=num("costs"),target=num("target");
+    var afterCut=fee*(1-cut);var net=afterCut-afterCut*pf-costs;
+    var total=0,parts=[];
+    cats.forEach(function(c){var h=num(c[0]);total+=h;parts.push({name:c[1],h:h,col:c[2]})});
+    var core=num("h-core");
+    var eff=total>0?net/total:0;
+    $("o-eff").textContent=total>0?money(eff):"-";
+    $("o-net").textContent=money(net);
+    $("o-hrs").textContent=hrs(total);
+    $("o-afford").textContent=target>0?hrs(Math.max(net,0)/target):"-";
+    var ratio=target>0&&total>0?eff/target:0;
+    $("meter").style.width=Math.max(0,Math.min(ratio,1.5))/1.5*100+"%";
+    $("meter-label").setAttribute("aria-label","Effective rate is "+Math.round(ratio*100)+"% of target");
+    var v=$("verdict");v.className="verdict";
+    if(total===0){$("v-head").textContent="Add your hours to see the result.";$("v-body").textContent="";}
+    else if(ratio>=1){$("v-head").textContent="On target: you earned "+Math.round(ratio*100)+"% of your target rate.";$("v-body").textContent="This project paid what it should. Note what made it work (clear scope, quick approvals) and repeat it.";}
+    else if(ratio>=0.75){v.className="verdict mid";$("v-head").textContent="Close: "+Math.round(ratio*100)+"% of your target rate.";$("v-body").textContent="You gave away about "+hrs(total-Math.max(net,0)/target)+" of work. Look at the biggest non-core slice below; that is usually where the gap is.";}
+    else{v.className="verdict low";$("v-head").textContent="Underpaid: "+Math.round(ratio*100)+"% of your target rate.";$("v-body").textContent="You gave away about "+hrs(total-Math.max(net,0)/target)+" of work. Raise the quote, limit revision rounds, or bill extra requests separately next time.";}
+    var stack=$("stack"),key=$("key"),tb=$("tbody");stack.innerHTML="";key.innerHTML="";tb.innerHTML="";
+    parts.forEach(function(p){
+      if(p.h>0&&total>0){var i=document.createElement("i");i.style.width=(p.h/total*100)+"%";i.style.background=p.col;i.title=p.name;stack.appendChild(i);
+        var s=document.createElement("span");s.style.setProperty("--c",p.col);s.textContent=p.name;key.appendChild(s);}
+      var tr=document.createElement("tr");
+      [p.name,hrs(p.h),total>0?Math.round(p.h/total*100)+"%":"0%",money(p.h*target)].forEach(function(t,ix){var td=document.createElement("td");td.textContent=t;if(ix)td.className="n";tr.appendChild(td)});
+      tb.appendChild(tr);
+    });
+    var keep=(1-cut)*(1-pf);
+    function feeFor(h){return keep>0?(h*target+costs)/keep:0}
+    var revSaved=num("h-rev")/2;
+    $("n-fee").textContent=total>0?whole(feeFor(total)):"-";
+    $("n-fee2").textContent=total>0?whole(feeFor(total-revSaved)):"-";
+    var mult=core>0?total/core:0;
+    $("n-mult").textContent=core>0?"x "+mult.toFixed(2):"-";
+    var lines=["Project: "+$("project").value.trim(),"Fee billed: "+money(fee)+"  |  Kept: "+money(net),"Hours: "+hrs(total)+"  ("+parts.filter(function(p){return p.h>0}).map(function(p){return p.name.toLowerCase()+" "+hrs(p.h)}).join(", ")+")","Effective rate: "+(total>0?money(eff):"-")+" per hour vs target "+money(target)+(total>0?" ("+Math.round(ratio*100)+"%)":""),"Next time quote: "+(total>0?whole(feeFor(total)):"-")+" for the same scope; hidden time multiplier "+(core>0?"x "+mult.toFixed(2):"-")];
+    $("summary").value=lines.join("\n");
+  }
+  $("calc").addEventListener("click",run);
+  document.querySelectorAll("input").forEach(function(el){el.addEventListener("input",run)});
+  $("reset").addEventListener("click",function(){cats.forEach(function(c){$(c[0]).value=""});run()});
+  $("copy").addEventListener("click",function(){
+    var t=$("summary");t.select();var ok=false;
+    try{if(navigator.clipboard){navigator.clipboard.writeText(t.value);ok=true}else{ok=document.execCommand("copy")}}catch(e){ok=false}
+    $("copied").textContent=ok?"Copied":"Select the text and copy it";
+    setTimeout(function(){$("copied").textContent=""},2500);
+  });
+  run();
+})();
+</script>
+<p style="text-align:center;margin:2em 0;font:14px system-ui"><a href="../../">More free tools from PixelCo</a></p></body></html>

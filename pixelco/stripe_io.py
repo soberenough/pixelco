@@ -22,6 +22,8 @@ class Stripe:
         self.key = os.environ.get("STRIPE_KEY", "")
         self.ledger = ledger
         self.enabled = bool(self.key)
+        # "live" or "test", from the key prefix (rk_live_/sk_live_ vs rk_test_/sk_test_).
+        self.mode = "live" if "_live_" in self.key[:9] else "test"
         self.managed = cfg.get("managed_payments", True)
         fees = cfg.get("fees", {})
         self.fee_pct = fees.get("percent", 0.064)   # 2.9% card + 3.5% Managed Payments
@@ -38,6 +40,20 @@ class Stripe:
         if r.status_code >= 400:
             raise StripeError(r.json().get("error", {}).get("message", r.text[:300]))
         return r.json()
+
+    def check_key(self):
+        """One cheap read, so a bad or under-permissioned key changes nothing."""
+        try:
+            r = requests.get(f"{API}/products", params={"limit": 1},
+                             auth=(self.key, ""), timeout=60)
+        except requests.RequestException as e:
+            return str(e)
+        if r.status_code >= 400:
+            try:
+                return r.json().get("error", {}).get("message") or f"HTTP {r.status_code}"
+            except ValueError:
+                return f"HTTP {r.status_code}"
+        return None
 
     def create_payment_link(self, item, price, redirect_url):
         try:
@@ -70,13 +86,17 @@ class Stripe:
             return {"id": link["id"], "url": link["url"]}
         except (StripeError, requests.RequestException) as e:
             # No silent fallback: without Managed Payments you'd become the seller of record.
-            self.ledger.event("cashier", f"Stripe refused checkout for {item['title']}: {e}")
+            msg = f"Stripe refused checkout for {item['title']} ({self.mode} mode): {e}"
+            if self.mode == "live":
+                self.ledger.alert(msg)
+            else:
+                self.ledger.event("cashier", msg)
             return None
 
     def sync_sales(self):
         """Book net revenue for completed checkouts on PixelCo's own links."""
         if not self.enabled:
-            self.ledger.event("accountant", "no Stripe key yet, skipping sales sync")
+            self.ledger.event("accountant", "Stripe not available this run, skipping sales sync")
             return
         by_link = {i["stripe_link"]: i for i in self.ledger.state["items"] if i.get("stripe_link")}
         params, new, ignored = {"limit": 100, "status": "complete"}, 0, 0
@@ -89,6 +109,8 @@ class Stripe:
             for s in d["data"]:
                 if s.get("payment_status") != "paid":
                     continue
+                if bool(s.get("livemode")) != (self.mode == "live"):
+                    continue  # never mix test-mode and live-mode money
                 link = s.get("payment_link")
                 item = by_link.get(link)
                 if not item and not (self.support_link and link == self.support_link):

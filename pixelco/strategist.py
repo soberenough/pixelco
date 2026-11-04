@@ -77,4 +77,5 @@ def brief(ledger):
                           "price": i.get("price")} for i in winners],
         "lanes": ledger.state["lanes"],
         "recent_rejections": ledger.state.get("rejected", [])[-5:],
+        "alerts": ledger.state.get("alerts", []),
     }

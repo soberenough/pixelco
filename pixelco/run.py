@@ -103,10 +103,15 @@ def business_day(cfg, inbox):
         if item["lane"] != "products":
             continue
         if stripe.enabled and item.get("buy_url") and link_mode(item) != stripe.mode:
-            reset_checkout(item)
+            problem = reset_checkout(item)
             led.event("cashier", f"moving {item['title']} to a {stripe.mode}-mode checkout")
+            if problem:
+                led.alert(problem)
         if not item.get("buy_url"):
-            attach_checkout(item, cfg, stripe)
+            try:
+                attach_checkout(item, cfg, stripe)
+            except Exception as e:  # one bad item must not lose the whole run
+                led.alert(f"checkout setup failed for {item.get('id')}: {e}")
 
     led.agent("marketer", "working", "publishing")
     publish(led, cfg)

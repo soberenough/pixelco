@@ -100,13 +100,17 @@ def reset_checkout(item):
         new = secrets.token_urlsafe(18)
         (SITE / "dl" / old).rename(SITE / "dl" / new)
         item["dl"] = new
+        return None
+    return f"download folder missing for {item.get('title', item.get('id'))}; old link may still work"
 
 
 def write_product_page(item, files):
-    buy = (f'<p><a class=btn href="{H.escape(item["buy_url"])}">Buy for ${item["price"]:.2f}</a></p>'
+    price = float(item.get("price") or 0)
+    desc = item.get("description") or ""
+    buy = (f'<p><a class=btn href="{H.escape(item["buy_url"])}">Buy for ${price:.2f}</a></p>'
            if item.get("buy_url") else "<p><i>Checkout opens soon.</i></p>")
-    body = (f"<h1>{H.escape(item['title'])}</h1><p>{H.escape(item['description'])}</p>"
-            f"<p class=price>${item['price']:.2f}</p>{buy}"
+    body = (f"<h1>{H.escape(item['title'])}</h1><p>{H.escape(desc)}</p>"
+            f"<p class=price>${price:.2f}</p>{buy}"
             "<h2>What's inside</h2><ul>"
             + "".join(f"<li>{H.escape(n)}</li>" for n in files)
             + "<li>LICENSE.txt</li></ul>"
@@ -114,7 +118,7 @@ def write_product_page(item, files):
             'See our <a href="../../refunds/">refund policy</a>.</p>')
     out = SITE / item["url"] / "index.html"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(page(item["title"], item["description"], body, depth=2))
+    out.write_text(page(item["title"], desc, body, depth=2))
 
 
 def _crosssell(ledger):

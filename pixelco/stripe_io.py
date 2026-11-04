@@ -96,7 +96,7 @@ class Stripe:
     def sync_sales(self):
         """Book net revenue for completed checkouts on PixelCo's own links."""
         if not self.enabled:
-            self.ledger.event("accountant", "no Stripe key yet, skipping sales sync")
+            self.ledger.event("accountant", "Stripe not available this run, skipping sales sync")
             return
         by_link = {i["stripe_link"]: i for i in self.ledger.state["items"] if i.get("stripe_link")}
         params, new, ignored = {"limit": 100, "status": "complete"}, 0, 0

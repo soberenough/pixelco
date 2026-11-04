@@ -23,4 +23,6 @@ Nothing else is needed. On the first run with a live key, PixelCo switches over 
 
 If the key is rejected (wrong key, or a missing permission), nothing is changed and the run records an alert. If the live account refuses a checkout (for example, Managed Payments isn't enabled for live), the product shows "Checkout opens soon" and the run records an alert naming the Stripe error.
 
+Each switch of Stripe mode moves every download to a new secret folder, so download pages from before the switch stop working. That's fine for the one-time move to live; avoid switching back and forth once real customers have bought.
+
 Optional: in Stripe **test** mode, deactivate the old Payment Links. If you use a tip link (`support_link_id` in `config.yaml`), replace it with a live one.

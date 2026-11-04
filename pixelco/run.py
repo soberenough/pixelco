@@ -88,7 +88,7 @@ def business_day(cfg, inbox):
                 bundle_parts(spec, led)
             except ValueError as e:
                 raise guard.Rejected(str(e))
-        except (guard.Rejected, ValueError) as e:
+        except Exception as e:  # any bad inbox file is rejected, never fatal
             led.state["rejected"].append({"file": name, "why": str(e)})
             led.event("gatekeeper", f"rejected {name}: {e}")
             continue

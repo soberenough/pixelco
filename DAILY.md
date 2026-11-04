@@ -45,7 +45,15 @@ to 500, both plain text.
 {"lane": "products", "slug": "...", "title": "...", "description": "...",
  "price": 7, "files": {"planner.md": "full contents", "tracker.csv": "..."}}
 ```
-1-10 files, each .md, .csv or .txt, written out in full. A real kit someone
+1-10 files, each .md, .csv or .txt, written out in full.
+Optional `"includes": ["kit-slug", ...]` (2-40 slugs of products already in
+the shop) makes a bundle: those kits' files are packed into the download in
+one folder each, and every included kit's page links to the bundle. Price a
+bundle at 30-90% of the kits' combined price (the gatekeeper rejects
+anything else). Bundles can't include bundles, and every included kit must
+already be in the shop: a bundle naming a kit that isn't built yet is
+rejected (see `rejected` in state.json), so resubmit it under a new file
+name once the kit exists. A real kit someone
 would pay for: complete templates, worked examples, clear instructions.
 
 **tools** (free single-page web tools):

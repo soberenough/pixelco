@@ -20,7 +20,7 @@ from pathlib import Path
 import yaml
 
 from . import guard
-from .lanes import BUILD, attach_checkout, link_mode, reset_checkout
+from .lanes import BUILD, attach_checkout, bundle_parts, link_mode, reset_checkout
 from .ledger import Ledger
 from .publisher import publish
 from .strategist import plan
@@ -84,6 +84,10 @@ def business_day(cfg, inbox):
             item_id = {"content": "content-", "tools": "tool-", "products": "product-"}[spec["lane"]] + spec["slug"]
             if led.has_item(item_id):
                 raise guard.Rejected("duplicate slug")
+            try:
+                bundle_parts(spec, led)
+            except ValueError as e:
+                raise guard.Rejected(str(e))
         except (guard.Rejected, ValueError) as e:
             led.state["rejected"].append({"file": name, "why": str(e)})
             led.event("gatekeeper", f"rejected {name}: {e}")
@@ -109,7 +113,7 @@ def business_day(cfg, inbox):
                 led.alert(problem)
         if not item.get("buy_url"):
             try:
-                attach_checkout(item, cfg, stripe)
+                attach_checkout(item, cfg, stripe, led)
             except Exception as e:  # one bad item must not lose the whole run
                 led.alert(f"checkout setup failed for {item.get('id')}: {e}")
 

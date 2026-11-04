@@ -20,7 +20,7 @@ from pathlib import Path
 import yaml
 
 from . import guard
-from .lanes import BUILD, attach_checkout
+from .lanes import BUILD, attach_checkout, link_mode, reset_checkout
 from .ledger import Ledger
 from .publisher import publish
 from .strategist import plan
@@ -55,7 +55,13 @@ def business_day(cfg, inbox):
     led = Ledger()
     led.state["cycle"] += 1
     led.event("ceo", f"--- day {led.state['cycle']} --- cash ${led.cash:.2f}")
+    led.state["alerts"] = []
     stripe = Stripe(led, cfg.get("stripe", {}))
+    if stripe.enabled:
+        problem = stripe.check_key()
+        if problem:
+            led.alert(f"Stripe key rejected ({stripe.mode} mode), checkouts left as they were: {problem}")
+            stripe.enabled = False
     if stripe.enabled and stripe.mode == "live" and not led.state.get("live_since"):
         led.go_live()
 
@@ -94,7 +100,12 @@ def business_day(cfg, inbox):
         led.agent(who, "idle", "")
 
     for item in led.state["items"]:
-        if item["lane"] == "products" and not item.get("buy_url"):
+        if item["lane"] != "products":
+            continue
+        if stripe.enabled and item.get("buy_url") and link_mode(item) != stripe.mode:
+            reset_checkout(item)
+            led.event("cashier", f"moving {item['title']} to a {stripe.mode}-mode checkout")
+        if not item.get("buy_url"):
             attach_checkout(item, cfg, stripe)
 
     led.agent("marketer", "working", "publishing")

@@ -75,7 +75,31 @@ def attach_checkout(item, cfg, stripe):
         if buy:
             item["stripe_link"] = buy["id"]
             item["buy_url"] = buy["url"]
+            item["stripe_mode"] = stripe.mode
     write_product_page(item, item.get("files", []))
+
+
+def link_mode(item):
+    if item.get("stripe_mode"):
+        return item["stripe_mode"]
+    return "test" if "/test_" in item.get("buy_url", "") else "live"
+
+
+def reset_checkout(item):
+    """Forget a checkout from the other Stripe mode, so a new one is made.
+
+    The download moves to a fresh secret folder too: the old checkout still
+    exists in Stripe and still redirects to the old folder, so leaving it
+    would let anyone with a test card download the kit for free.
+    """
+    for k in ("buy_url", "stripe_link", "stripe_product", "stripe_price",
+              "tax_code_set", "stripe_mode"):
+        item.pop(k, None)
+    old = item.get("dl")
+    if old and (SITE / "dl" / old).is_dir():
+        new = secrets.token_urlsafe(18)
+        (SITE / "dl" / old).rename(SITE / "dl" / new)
+        item["dl"] = new
 
 
 def write_product_page(item, files):

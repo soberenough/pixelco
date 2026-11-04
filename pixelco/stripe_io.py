@@ -41,6 +41,20 @@ class Stripe:
             raise StripeError(r.json().get("error", {}).get("message", r.text[:300]))
         return r.json()
 
+    def check_key(self):
+        """One cheap read, so a bad or under-permissioned key changes nothing."""
+        try:
+            r = requests.get(f"{API}/products", params={"limit": 1},
+                             auth=(self.key, ""), timeout=60)
+        except requests.RequestException as e:
+            return str(e)
+        if r.status_code >= 400:
+            try:
+                return r.json().get("error", {}).get("message") or f"HTTP {r.status_code}"
+            except ValueError:
+                return f"HTTP {r.status_code}"
+        return None
+
     def create_payment_link(self, item, price, redirect_url):
         try:
             # Reuse what earlier attempts created, so retries don't pile up duplicates.
@@ -72,7 +86,11 @@ class Stripe:
             return {"id": link["id"], "url": link["url"]}
         except (StripeError, requests.RequestException) as e:
             # No silent fallback: without Managed Payments you'd become the seller of record.
-            self.ledger.event("cashier", f"Stripe refused checkout for {item['title']}: {e}")
+            msg = f"Stripe refused checkout for {item['title']} ({self.mode} mode): {e}"
+            if self.mode == "live":
+                self.ledger.alert(msg)
+            else:
+                self.ledger.event("cashier", msg)
             return None
 
     def sync_sales(self):

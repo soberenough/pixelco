@@ -22,6 +22,8 @@ class Stripe:
         self.key = os.environ.get("STRIPE_KEY", "")
         self.ledger = ledger
         self.enabled = bool(self.key)
+        # "live" or "test", from the key prefix (rk_live_/sk_live_ vs rk_test_/sk_test_).
+        self.mode = "live" if "_live_" in self.key[:9] else "test"
         self.managed = cfg.get("managed_payments", True)
         fees = cfg.get("fees", {})
         self.fee_pct = fees.get("percent", 0.064)   # 2.9% card + 3.5% Managed Payments
@@ -89,6 +91,8 @@ class Stripe:
             for s in d["data"]:
                 if s.get("payment_status") != "paid":
                     continue
+                if bool(s.get("livemode")) != (self.mode == "live"):
+                    continue  # never mix test-mode and live-mode money
                 link = s.get("payment_link")
                 item = by_link.get(link)
                 if not item and not (self.support_link and link == self.support_link):

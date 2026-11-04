@@ -56,6 +56,8 @@ def business_day(cfg, inbox):
     led.state["cycle"] += 1
     led.event("ceo", f"--- day {led.state['cycle']} --- cash ${led.cash:.2f}")
     stripe = Stripe(led, cfg.get("stripe", {}))
+    if stripe.enabled and stripe.mode == "live" and not led.state.get("live_since"):
+        led.go_live()
 
     led.agent("accountant", "working", "syncing sales")
     try:

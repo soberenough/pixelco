@@ -87,6 +87,30 @@ class Ledger:
         self.event("accountant", f"+${amount:.2f} from {source or lane or 'sale'}")
         return True
 
+    def go_live(self):
+        """First run with a live Stripe key: start the books and checkouts fresh.
+
+        Test-mode revenue was never real money, so it moves to test_revenue.
+        Test-mode Stripe objects don't exist in live mode, so every product
+        drops its old checkout and gets a new live one this run. Lane counters
+        restart too: nothing could really sell before today, so the CEO's
+        kill clock starts now.
+        """
+        t = self.state["treasury"]
+        t["test_revenue"] = round(t.get("test_revenue", 0) + t["revenue"], 4)
+        t["revenue"] = 0.0
+        for L in self.state["lanes"].values():
+            L.update(items=0, revenue=0.0, alive=True)
+        for it in self.state["items"]:
+            if it.get("revenue") or it.get("sales"):
+                it["test_revenue"] = it.get("revenue", 0)
+                it["revenue"], it["sales"] = 0.0, 0
+            for k in ("buy_url", "stripe_link", "stripe_product", "stripe_price", "tax_code_set"):
+                it.pop(k, None)
+        self.state["live_since"] = _now()
+        self.event("accountant", f"LIVE MODE: books restarted; ${t['test_revenue']:.2f} "
+                                 "of test-mode sales moved out of revenue")
+
     # ---------- bookkeeping ----------
     def lane(self, name):
         return self.state["lanes"].setdefault(

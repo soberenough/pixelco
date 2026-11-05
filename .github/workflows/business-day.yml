@@ -40,27 +40,21 @@ jobs:
           PIXELCO_STATE: vault/state.json
         run: python -m pixelco.run
 
-      # The vault is saved first: if a later step fails, the books still match
-      # the checkout links. Downloads are mirrored, so retired secret folders
-      # (moved when a product changes Stripe mode) are deleted, not restored.
-      - name: Save private state and downloads to the vault
-        working-directory: vault
-        run: |
-          # Safety: never mirror a smaller set of downloads than the vault holds.
-          [ "$(ls ../site/dl | wc -l)" -ge "$(ls dl | wc -l)" ] || { echo "download count dropped, refusing to mirror"; exit 1; }
-          for d in dl/*/; do [ -d "../site/dl/$(basename "$d")" ] || rm -rf "$d"; done
-          cp -r ../site/dl/. dl/
-          git config user.name "pixelco-bot"
-          git config user.email "pixelco-bot@users.noreply.github.com"
-          git add state.json dl
-          git commit -q -m "Business day $(jq .cycle state.json)" || echo "no vault changes"
-          git push
       - name: Save public pages
         run: |
           git config user.name "pixelco-bot"
           git config user.email "pixelco-bot@users.noreply.github.com"
           git add site
           git commit -q -m "Business day $(jq .cycle vault/state.json)" || echo "no page changes"
+          git push
+      - name: Save private state and downloads to the vault
+        working-directory: vault
+        run: |
+          cp -r ../site/dl/. dl/
+          git config user.name "pixelco-bot"
+          git config user.email "pixelco-bot@users.noreply.github.com"
+          git add state.json dl
+          git commit -q -m "Business day $(jq .cycle state.json)" || echo "no vault changes"
           git push
       - run: rm -rf vault
 

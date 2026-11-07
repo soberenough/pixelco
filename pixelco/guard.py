@@ -119,6 +119,17 @@ def check(spec):
             clean[name] = body
         out["price"] = round(price, 2)
         out["files"] = clean
+        # Optional bundle: other PixelCo products whose files are packed in too.
+        inc = spec.get("includes")
+        if inc is not None:
+            # Type and format first: untrusted JSON may hold lists or objects here.
+            if (not isinstance(inc, list) or not 2 <= len(inc) <= 40
+                    or not all(isinstance(x, str) and SLUG.match(x) for x in inc)
+                    or len(set(inc)) != len(inc)):
+                raise Rejected("includes must be 2-40 distinct product slugs")
+            if slug in inc:
+                raise Rejected("a bundle can't include itself")
+            out["includes"] = inc
     return out
 
 

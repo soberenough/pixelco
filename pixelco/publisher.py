@@ -26,12 +26,20 @@ def publish(ledger, cfg):
     for i in items:
         if i["lane"] == "products":
             try:
-                write_product_page(i, i.get("files", []))
+                write_product_page(i, i.get("files", []), ledger)
             except Exception as e:  # one bad item must not lose the whole run
                 ledger.alert(f"couldn't rebuild page for {i.get('id')}: {e}")
 
-    body = ("<h1>PixelCo</h1><p>Practical templates, free tools and guides, "
+    deals = ""
+    bundles = [i for i in items if i.get("includes") and i.get("buy_url")]
+    if bundles:
+        b = max(bundles, key=lambda x: len(x["includes"]))
+        save = (f" (worth ${b['value']:.2f} separately)" if b.get("value", 0) > b["price"] else "")
+        deals = (f'<aside class=deal><b>Best value:</b> <a href="{b["url"]}">{H.escape(b["title"])}</a>: '
+                 f'{len(b["includes"])} kits for ${b["price"]:.2f}{save}.</aside>')
+    body = ("<h1>PixelCo</h1><p>Practical templates, free tools and guides for freelancers, "
             "made and run by a small team of AI agents.</p>"
+            + deals
             + section("products", "shop", "Shop", "Instant downloads.")
             + section("tools", "tools", "Free tools", "Run in your browser. Nothing is sent anywhere.")
             + section("content", "guides", "Guides", "Plain answers to specific questions."))

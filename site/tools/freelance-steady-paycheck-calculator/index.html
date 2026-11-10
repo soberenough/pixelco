@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en"><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; form-action 'none'; base-uri 'none'"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Freelance Steady Paycheck and Runway Calculator</title>
+<style>
+:root{--bg:#fbfaf7;--card:#ffffff;--fg:#22212b;--dim:#6b6878;--line:#e4e1d8;--accent:#7a4fb3;--soft:#f3eefa;--ok:#2f8a4c;--warn:#a6551c;--bad:#b3261e;--bar:#c9b6e6}
+@media (prefers-color-scheme:dark){:root{--bg:#17161f;--card:#201f2b;--fg:#ebe8df;--dim:#a19db0;--line:#33313f;--accent:#b192e6;--soft:#262035;--ok:#4fbf74;--warn:#e39a62;--bad:#f28b82;--bar:#5b4785}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:860px;margin:0 auto;padding:24px 16px 48px}
+h1{margin:0 0 4px;font-size:28px;line-height:1.2}
+h2{font-size:18px;margin:28px 0 10px}
+p.lead{margin:0 0 20px;color:var(--dim)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+.months{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+label{display:block;font-size:14px;font-weight:600}
+label span{display:block;font-weight:400;color:var(--dim);font-size:13px}
+.months label{font-weight:500;font-size:13px}
+input,select{width:100%;margin-top:6px;padding:10px;font:inherit;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px}
+fieldset{border:1px solid var(--line);border-radius:8px;padding:12px 14px 14px;margin:0 0 14px;background:var(--card)}
+legend{font-weight:600;padding:0 6px}
+button{font:inherit;padding:10px 14px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.out{margin-top:20px;padding:18px;border-radius:8px;background:var(--soft);display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.out div b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
+.out div small{color:var(--dim)}
+.verdict{margin-top:16px;padding:14px 16px;border-left:4px solid var(--ok);background:var(--card);border-radius:0 8px 8px 0}
+.verdict.mid{border-color:var(--warn)}.verdict.low{border-color:var(--bad)}
+.chart{display:flex;align-items:flex-end;gap:4px;height:160px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);position:relative}
+.chart .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
+.chart .col i{display:block;background:var(--bar);border-radius:3px 3px 0 0;min-height:1px}
+.chart .col i.neg{background:var(--bad)}
+.chart .line{position:absolute;left:8px;right:8px;border-top:2px dashed var(--accent)}
+.legend{font-size:13px;color:var(--dim);margin-top:6px}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:8px 6px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--dim);font-weight:600}
+td.neg{color:var(--bad);font-weight:600}
+.wrap{overflow-x:auto}
+.note{font-size:13px;color:var(--dim);margin-top:24px}
+.err{color:var(--bad);font-size:14px;margin-top:8px}
+</style>
+</head>
+<body><main>
+<h1>Freelance Steady Paycheck and Runway Calculator</h1>
+<p class="lead">Freelance income arrives in lumps. Enter what came in over the last twelve months and what you need to live on. Get a steady monthly amount you can pay yourself, how many months your buffer covers, and a replay of your year showing whether that paycheck would have held up. Nothing leaves your browser.</p>
+
+<fieldset><legend>What came in, month by month</legend>
+<p style="margin:0 0 10px;font-size:14px;color:var(--dim)">Money received into your business in each of the last 12 months, after business expenses. Use 0 for a month with nothing. Oldest first.</p>
+<div class="months" id="months"></div>
+</fieldset>
+
+<fieldset><legend>Your money and your needs</legend>
+<div class="grid">
+<label>Currency symbol<input id="cur" value="$" maxlength="4"></label>
+<label>Set aside for tax (%)<span>Your own estimate; this tool does not work it out</span><input id="tax" type="number" min="0" max="80" step="1" value="25"></label>
+<label>Buffer you hold today<span>Cash kept for lean months, after tax money</span><input id="buf" type="number" min="0" step="1" value="4000"></label>
+<label>Essential costs per month<span>Rent, food, bills, debt minimums</span><input id="ess" type="number" min="0" step="1" value="2600"></label>
+<label>Buffer target (months)<span>Of essential costs</span><input id="target" type="number" min="0" step="0.5" value="3"></label>
+<label>Paycheck method
+<select id="method">
+<option value="safe">Cautious: lower of median and average, less 10%</option>
+<option value="avg">Average: full 12-month average</option>
+<option value="custom">My own amount</option>
+</select></label>
+<label id="customL">My paycheck per month<input id="custom" type="number" min="0" step="1" value="3000"></label>
+</div></fieldset>
+
+<div class="bar"><button class="primary" id="go" type="button">Calculate</button><button id="ex" type="button">Load example year</button><button id="clear" type="button">Clear months</button></div>
+<div id="err" class="err" role="alert"></div>
+
+<div class="out" aria-live="polite">
+<div><small>Average take-home per month</small><b id="oAvg">-</b></div>
+<div><small>Steady paycheck</small><b id="oPay">-</b></div>
+<div><small>Runway today</small><b id="oRun">-</b></div>
+<div><small>Buffer target</small><b id="oTgt">-</b></div>
+</div>
+<div class="verdict" id="verdict"></div>
+
+<h2>Your year, replayed with a steady paycheck</h2>
+<div class="chart" id="chart" aria-hidden="true"></div>
+<p class="legend">Bars: take-home income each month (after tax set-aside). Dashed line: the steady paycheck. Red bars: months where the buffer would have run out.</p>
+<div class="wrap"><table><thead><tr><th>Month</th><th>Came in</th><th>Tax set-aside</th><th>Take-home</th><th>Paycheck</th><th>Buffer after</th></tr></thead><tbody id="rows"></tbody></table></div>
+
+<h2>How to use the number</h2>
+<ol>
+<li>Open a separate account (or pot) for the business, one for tax, and pay everything that comes in there first.</li>
+<li>On the same day each month, move the steady paycheck to your personal account. Do not pay yourself more in a good month.</li>
+<li>Whatever is left above the paycheck builds the buffer. Once the buffer reaches your target, you can raise the paycheck a little, or put the extra toward other goals.</li>
+<li>If the buffer ever drops below one month of essential costs, cut the paycheck to essentials only until it recovers, and put your energy into finding work.</li>
+<li>Run this again every quarter with fresh numbers.</li>
+</ol>
+<p class="note">This is a planning aid that does simple arithmetic on the numbers you enter. It is general information, not financial or tax advice. The right tax set-aside depends on where you live and how your business is set up, so confirm it with an accountant or your tax authority's guidance.</p>
+</main>
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+var EX=[4200,5400,2800,600,6200,4100,3900,4800,7500,1900,4600,4300];
+var names=[];
+(function build(){
+  var t=new Date(),h='';
+  for(var k=12;k>=1;k--){var d=new Date(t.getFullYear(),t.getMonth()-k,1);names.push(d.toLocaleDateString(undefined,{month:'short',year:'2-digit'}))}
+  for(var i=0;i<12;i++)h+='<label>'+names[i]+'<input type="number" min="0" step="1" id="m'+i+'"></label>';
+  $('months').innerHTML=h;
+})();
+function v(id){var x=parseFloat($(id).value);return isFinite(x)&&x>0?x:0}
+function money(x){var c=$('cur').value||'';var s=Math.round(Math.abs(x)).toLocaleString();return (x<0?'-':'')+c+s}
+function median(a){var s=a.slice().sort(function(p,q){return p-q});var m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2}
+function toggle(){$('customL').style.display=$('method').value==='custom'?'':'none'}
+function calc(){
+  $('err').textContent='';
+  var inc=[],filled=0;
+  for(var i=0;i<12;i++){var raw=$('m'+i).value;if(raw!=='')filled++;inc.push(v('m'+i))}
+  if(filled<3){$('err').textContent='Enter at least three months of income (use 0 for empty months).';return}
+  var tax=Math.min(80,v('tax'))/100,ess=v('ess'),buf0=v('buf'),tgtM=v('target');
+  var take=inc.map(function(x){return x*(1-tax)});
+  var avg=take.reduce(function(a,b){return a+b},0)/12;
+  var med=median(take);
+  var pay;
+  var m=$('method').value;
+  if(m==='avg')pay=avg;else if(m==='custom')pay=v('custom');else pay=Math.min(avg,med)*0.9;
+  pay=Math.floor(pay/10)*10;
+  var tgt=ess*tgtM;
+  $('oAvg').textContent=money(avg);
+  $('oPay').textContent=money(pay);
+  $('oRun').textContent=ess>0?(buf0/ess).toFixed(1)+' mo':'-';
+  $('oTgt').textContent=money(tgt);
+  var buf=buf0,low=buf0,lowAt=-1,broke=[],rows='';
+  var max=Math.max.apply(null,take.concat([pay,1]));
+  var bars='';
+  for(i=0;i<12;i++){
+    buf+=take[i]-pay;
+    if(buf<low){low=buf;lowAt=i}
+    var neg=buf<0;if(neg)broke.push(names[i]);
+    rows+='<tr><td>'+names[i]+'</td><td>'+money(inc[i])+'</td><td>'+money(inc[i]*tax)+'</td><td>'+money(take[i])+'</td><td>'+money(pay)+'</td><td'+(neg?' class="neg"':'')+'>'+money(buf)+'</td></tr>';
+    bars+='<div class="col" title="'+names[i]+'"><i'+(neg?' class="neg"':'')+' style="height:'+(take[i]/max*100).toFixed(1)+'%"></i></div>';
+  }
+  bars+='<div class="line" style="bottom:calc(8px + '+(pay/max*100*0.9).toFixed(1)+'%)"></div>';
+  $('chart').innerHTML=bars;
+  var line=$('chart').querySelector('.line');
+  line.style.bottom='calc(8px + (100% - 16px) * '+(pay/max).toFixed(4)+')';
+  $('rows').innerHTML=rows;
+  var vd=$('verdict');vd.className='verdict';
+  var msg='';
+  var yearSurplus=(avg-pay)*12;
+  if(pay<ess&&avg>=ess&&m!=='custom'){vd.classList.add('mid');msg='<b>The cautious paycheck ('+money(pay)+') is below your essential costs ('+money(ess)+'), but your average take-home ('+money(avg)+') covers them.</b> Your income is uneven rather than too low. Try the paycheck method "My own amount" set to your essential costs and check that the replay below stays above zero; if it does not, the buffer is what needs to grow first.'}
+  else if(pay<ess&&avg<ess){vd.classList.add('low');msg='<b>The steady paycheck ('+money(pay)+') is below your essential costs ('+money(ess)+').</b> Your past year did not bring in enough on average to cover essentials every month at this tax set-aside. On average you are about '+money(ess-avg)+' a month short: that is the amount of extra work, higher rates or lower costs to aim for.'}
+  else if(broke.length){vd.classList.add('mid');msg='<b>This paycheck would have emptied your buffer in '+broke.join(', ')+'.</b> Either start with a bigger buffer, or lower the paycheck until the replay stays above zero. The lowest point was '+money(low)+'.'}
+  else{msg='<b>This paycheck held up all year.</b> Your buffer never went below '+money(low)+(lowAt>=0?' (in '+names[lowAt]+')':'')+'.'}
+  if(tgt>0&&pay>=ess){
+    if(buf0>=tgt)msg+=' You already hold your '+tgtM+'-month target.';
+    else if(avg>pay){var need=tgt-buf0;var mo=Math.ceil(need/(avg-pay));msg+=' At this paycheck you would reach your '+tgtM+'-month buffer target in about '+mo+' month'+(mo===1?'':'s')+' on an average year.'}
+    else msg+=' At this paycheck the buffer will not grow on an average year; lower it a little to build toward your target.';
+  }
+  vd.innerHTML=msg;
+}
+$('go').addEventListener('click',calc);
+$('method').addEventListener('change',function(){toggle();calc()});
+['cur','tax','buf','ess','target','custom'].forEach(function(i){$(i).addEventListener('change',calc)});
+$('months').addEventListener('change',calc);
+$('ex').addEventListener('click',function(){for(var i=0;i<12;i++)$('m'+i).value=EX[i];calc()});
+$('clear').addEventListener('click',function(){for(var i=0;i<12;i++)$('m'+i).value='';$('rows').innerHTML='';$('chart').innerHTML='';$('verdict').textContent=''});
+for(var i=0;i<12;i++)$('m'+i).value=EX[i];
+toggle();calc();
+})();
+</script>
+<p style="text-align:center;margin:2em 0;font:14px system-ui"><a href="../../">More free tools from PixelCo</a></p></body></html>

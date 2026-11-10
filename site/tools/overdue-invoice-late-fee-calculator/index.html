@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en"><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; form-action 'none'; base-uri 'none'"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Overdue Invoice Late Fee Calculator</title>
+<style>
+:root{--bg:#fbfaf7;--card:#ffffff;--fg:#22212b;--dim:#6b6878;--line:#e4e1d8;--accent:#2f6fb3;--soft:#edf3fa;--warn:#a6551c;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#17161f;--card:#201f2b;--fg:#ebe8df;--dim:#a19db0;--line:#33313f;--accent:#6aa8ea;--soft:#1d2633;--warn:#e39a62;--bad:#f28b82}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:820px;margin:0 auto;padding:24px 16px 48px}
+h1{margin:0 0 4px;font-size:28px;line-height:1.2}
+h2{font-size:18px;margin:28px 0 10px}
+p.lead{margin:0 0 20px;color:var(--dim)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+label{display:block;font-size:14px;font-weight:600}
+label span{display:block;font-weight:400;color:var(--dim);font-size:13px}
+input,select,textarea{width:100%;margin-top:6px;padding:10px;font:inherit;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+fieldset{border:1px solid var(--line);border-radius:8px;padding:12px 14px 14px;margin:0 0 14px;background:var(--card)}
+legend{font-weight:600;padding:0 6px}
+button{font:inherit;padding:10px 14px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.out{margin-top:20px;padding:18px;border-radius:8px;background:var(--soft);display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.out div b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
+.out div small{color:var(--dim)}
+.stage{margin-top:16px;padding:14px 16px;border-left:4px solid var(--accent);background:var(--card);border-radius:0 8px 8px 0}
+.stage.mid{border-color:var(--warn)}.stage.late{border-color:var(--bad)}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-weight:600}
+td.n,th.n{text-align:right}
+textarea{min-height:240px;font-size:14px;line-height:1.5}
+.note{font-size:13px;color:var(--dim);margin-top:24px}
+.copied{color:var(--accent);font-size:14px}
+.err{color:var(--bad);font-size:14px;margin-top:8px}
+</style>
+</head>
+<body><main>
+<h1>Overdue Invoice Late Fee Calculator</h1>
+<p class="lead">Enter an unpaid invoice and the late-fee terms in your contract. See how many days it is overdue, what fee your terms allow, the new balance, and get a calm, ready-to-send reminder. Everything stays in your browser.</p>
+
+<fieldset><legend>The invoice</legend>
+<div class="grid">
+<label>Invoice number<span>As it appears on the invoice</span><input id="num" value="INV-1042"></label>
+<label>Amount due<span>Unpaid balance, before fees</span><input id="amt" type="number" min="0" step="0.01" value="2400"></label>
+<label>Currency symbol<span>Shown in results</span><input id="cur" value="$" maxlength="4"></label>
+<label>Invoice date<input id="idate" type="date"></label>
+<label>Payment terms<span>Days until due</span>
+<select id="terms"><option value="0">Due on receipt</option><option value="7">Net 7</option><option value="14" selected>Net 14</option><option value="15">Net 15</option><option value="30">Net 30</option><option value="45">Net 45</option><option value="60">Net 60</option></select></label>
+<label>Check as of<span>Usually today</span><input id="today" type="date"></label>
+</div></fieldset>
+
+<fieldset><legend>Late-fee terms from your contract</legend>
+<div class="grid">
+<label>Fee type
+<select id="ftype">
+<option value="monthly">Percent per month (simple)</option>
+<option value="annual">Percent per year (daily simple interest)</option>
+<option value="flat">One flat fee</option>
+<option value="flatmonthly">Flat fee + percent per month</option>
+<option value="none">No late fee, reminder only</option>
+</select></label>
+<label id="rateL">Rate (%)<span id="rateHint">e.g. 1.5 per month</span><input id="rate" type="number" min="0" step="0.01" value="1.5"></label>
+<label id="flatL">Flat fee<span>Charged once</span><input id="flat" type="number" min="0" step="0.01" value="25"></label>
+<label>Grace period (days)<span>After the due date, before fees start</span><input id="grace" type="number" min="0" step="1" value="0"></label>
+<label>Count partial months as<span>For monthly rates</span>
+<select id="partial"><option value="pro">Pro-rated by day</option><option value="full">A full month</option><option value="whole">Ignore until complete</option></select></label>
+<label>Fee cap (%)<span>Optional ceiling, 0 = none</span><input id="cap" type="number" min="0" step="0.1" value="0"></label>
+</div></fieldset>
+
+<fieldset><legend>For the reminder message</legend>
+<div class="grid">
+<label>Client name<input id="client" value="Sam"></label>
+<label>Your name<input id="me" value="Alex"></label>
+<label>Project<input id="proj" value="the website redesign"></label>
+<label>How to pay<span>Short line</span><input id="pay" value="bank transfer using the details on the invoice"></label>
+</div></fieldset>
+
+<div class="bar"><button class="primary" id="go" type="button">Calculate</button><button id="reset" type="button">Reset example</button></div>
+<div id="err" class="err" role="alert"></div>
+
+<div class="out" id="out" aria-live="polite">
+<div><small>Due date</small><b id="oDue">-</b></div>
+<div><small>Days overdue</small><b id="oDays">-</b></div>
+<div><small>Late fee allowed</small><b id="oFee">-</b></div>
+<div><small>New balance</small><b id="oBal">-</b></div>
+</div>
+<div class="stage" id="stage"></div>
+
+<h2>How the fee grows if it stays unpaid</h2>
+<table><thead><tr><th>If paid on</th><th class="n">Days late</th><th class="n">Fee</th><th class="n">Total</th></tr></thead><tbody id="rows"></tbody></table>
+
+<h2>Reminder to send</h2>
+<div class="bar" style="margin-top:0">
+<label style="flex:1;min-width:200px">Tone<select id="tone"><option value="auto">Match how late it is</option><option value="soft">Friendly nudge</option><option value="firm">Firm follow-up</option><option value="final">Final notice</option></select></label>
+<button id="copy" type="button">Copy message</button><span class="copied" id="copied"></span>
+</div>
+<textarea id="msg" aria-label="Reminder message"></textarea>
+
+<p class="note">How to use this well: only charge a late fee your client agreed to in writing (in the contract, proposal or invoice terms) before the work began. Many places limit late fees or interest on business debts, and some set a statutory rate you may claim instead, so check the rules where you and your client are based. This tool is general information, not legal advice. A polite reminder sent on the first day overdue gets most invoices paid; fees work best as a clear, pre-agreed consequence rather than a surprise.</p>
+</main>
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+var DAY=86400000;
+function iso(d){return d.toISOString().slice(0,10)}
+function parse(s){if(!s)return null;var p=s.split('-');return new Date(Date.UTC(+p[0],+p[1]-1,+p[2]))}
+function nice(d){return d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric',timeZone:'UTC'})}
+function money(v){var c=$('cur').value||'';return c+v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+function num(id){var v=parseFloat($(id).value);return isFinite(v)&&v>0?v:0}
+function setDefaults(){
+  var t=new Date();var today=new Date(Date.UTC(t.getFullYear(),t.getMonth(),t.getDate()));
+  $('today').value=iso(today);
+  $('idate').value=iso(new Date(today.getTime()-40*DAY));
+}
+function feeFor(amount,days){
+  var type=$('ftype').value,rate=num('rate')/100,flat=num('flat'),part=$('partial').value,cap=num('cap')/100;
+  if(days<=0||type==='none')return 0;
+  var fee=0,months=days/30;
+  if(part==='full')months=Math.ceil(days/30);
+  if(part==='whole')months=Math.floor(days/30);
+  if(type==='monthly')fee=amount*rate*months;
+  else if(type==='annual')fee=amount*rate*days/365;
+  else if(type==='flat')fee=flat;
+  else if(type==='flatmonthly')fee=flat+amount*rate*months;
+  if(cap>0)fee=Math.min(fee,amount*cap);
+  return Math.round(fee*100)/100;
+}
+function toggle(){
+  var t=$('ftype').value;
+  $('rateL').style.display=(t==='flat'||t==='none')?'none':'';
+  $('flatL').style.display=(t==='flat'||t==='flatmonthly')?'':'none';
+  $('rateHint').textContent=t==='annual'?'e.g. 8 per year':'e.g. 1.5 per month';
+}
+var last=null;
+function calc(){
+  $('err').textContent='';
+  var amt=num('amt'),inv=parse($('idate').value),now=parse($('today').value);
+  if(!amt||!inv||!now){$('err').textContent='Enter an amount, an invoice date and a check date.';return}
+  var due=new Date(inv.getTime()+(+$('terms').value)*DAY);
+  var grace=Math.max(0,Math.floor(num('grace')));
+  var over=Math.round((now-due)/DAY);
+  var feeDays=over-grace;
+  var fee=feeFor(amt,feeDays);
+  $('oDue').textContent=nice(due);
+  $('oDays').textContent=over>0?over:'0';
+  $('oFee').textContent=money(fee);
+  $('oBal').textContent=money(amt+fee);
+  var st=$('stage');st.className='stage';
+  var stage;
+  if(over<0){stage='soft';st.innerHTML='<b>Not due yet.</b> Due in '+(-over)+' day'+(-over===1?'':'s')+'. A short heads-up a few days before the due date is a kind way to prevent a late payment.'}
+  else if(over===0){stage='soft';st.innerHTML='<b>Due today.</b> No fee yet. If it has not arrived by tomorrow, send the friendly nudge.'}
+  else if(over<=14){stage='soft';st.classList.add('mid');st.innerHTML='<b>'+over+' days overdue.</b> Most late invoices at this stage are simply forgotten. Send a friendly nudge and resend the invoice.'+(feeDays<=0&&$('ftype').value!=='none'?' You are still inside your grace period, so no fee applies yet.':'')}
+  else if(over<=45){stage='firm';st.classList.add('mid');st.innerHTML='<b>'+over+' days overdue.</b> Time for a firm follow-up: state the amount, the fee your terms allow, and ask for a payment date. Consider pausing new work until it is settled.'}
+  else{stage='final';st.classList.add('late');st.innerHTML='<b>'+over+' days overdue.</b> Send a final notice with a specific deadline and say what happens next (for example, pausing work, a formal demand letter, or a small-claims or collection process).'}
+  last={amt:amt,due:due,over:over,fee:fee,stage:stage,now:now};
+  var rows='';[0,7,14,30,60,90].forEach(function(k){
+    var d=new Date(Math.max(now.getTime(),due.getTime())+k*DAY);var o=Math.round((d-due)/DAY);var f=feeFor(amt,o-grace);
+    rows+='<tr><td>'+nice(d)+'</td><td class="n">'+Math.max(0,o)+'</td><td class="n">'+money(f)+'</td><td class="n">'+money(amt+f)+'</td></tr>';
+  });
+  $('rows').innerHTML=rows;
+  writeMsg();
+}
+function writeMsg(){
+  if(!last)return;
+  var t=$('tone').value==='auto'?last.stage:$('tone').value;
+  var c=$('client').value||'there',me=$('me').value||'',p=$('proj').value||'the project',n=$('num').value||'the invoice',pay=$('pay').value;
+  var amt=money(last.amt),fee=last.fee>0?money(last.fee):'',tot=money(last.amt+last.fee),due=nice(last.due),over=Math.max(0,last.over);
+  var deadline=nice(new Date(last.now.getTime()+7*DAY));
+  var s,b;
+  if(t==='soft'){
+    s='Quick reminder: invoice '+n;
+    b='Hi '+c+',\n\nI hope things are going well. This is a quick reminder that invoice '+n+' for '+p+' ('+amt+') was due on '+due+'. It may simply have slipped through, so I have attached it again.\n\n'+(pay?'You can pay by '+pay+'.\n\n':'')+'Could you let me know when I can expect payment? If anything on the invoice needs changing, just tell me and I will sort it out.\n\nThanks,\n'+me;
+  }else if(t==='firm'){
+    s='Overdue: invoice '+n+' ('+over+' days)';
+    b='Hi '+c+',\n\nI am following up on invoice '+n+' for '+p+'. It was due on '+due+' and is now '+over+' days overdue.\n\nOriginal amount: '+amt+(fee?'\nLate fee per our agreed terms: '+fee+'\nBalance now due: '+tot:'')+'\n\n'+(pay?'Payment can be made by '+pay+'. ':'')+'Please confirm a payment date by '+deadline+'. If there is a problem with the invoice or with timing, let me know and we can agree a plan.\n\n'+'Until this is settled I will need to hold any new work.\n\nBest regards,\n'+me;
+  }else{
+    s='Final notice: invoice '+n;
+    b='Hi '+c+',\n\nThis is a final notice for invoice '+n+' for '+p+', due on '+due+' and now '+over+' days overdue. I have not yet received payment or a reply to my earlier reminders.\n\nOriginal amount: '+amt+(fee?'\nLate fees per our agreed terms: '+fee:'')+'\nTotal now due: '+tot+'\n\nPlease pay in full by '+deadline+(pay?' by '+pay:'')+'. If payment is not received by then, I will take the next steps available to me to recover the balance.\n\nIf you would like to arrange payment in instalments, reply before that date and I am happy to agree a schedule in writing.\n\nRegards,\n'+me;
+  }
+  $('msg').value='Subject: '+s+'\n\n'+b;
+}
+$('go').addEventListener('click',calc);
+$('ftype').addEventListener('change',function(){toggle();calc()});
+['amt','idate','terms','today','rate','flat','grace','partial','cap','cur'].forEach(function(i){$(i).addEventListener('change',calc)});
+['tone','client','me','proj','num','pay'].forEach(function(i){$(i).addEventListener('input',writeMsg)});
+$('copy').addEventListener('click',function(){
+  var m=$('msg');m.select();var ok=false;
+  try{if(navigator.clipboard){navigator.clipboard.writeText(m.value);ok=true}else{ok=document.execCommand('copy')}}catch(e){ok=false}
+  $('copied').textContent=ok?'Copied':'Select the text and copy it';
+  setTimeout(function(){$('copied').textContent=''},2000);
+});
+$('reset').addEventListener('click',function(){
+  $('num').value='INV-1042';$('amt').value='2400';$('terms').value='14';$('ftype').value='monthly';$('rate').value='1.5';$('flat').value='25';$('grace').value='0';$('partial').value='pro';$('cap').value='0';
+  setDefaults();toggle();calc();
+});
+setDefaults();toggle();calc();
+})();
+</script>
+<p style="text-align:center;margin:2em 0;font:14px system-ui"><a href="../../">More free tools from PixelCo</a></p></body></html>

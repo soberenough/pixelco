@@ -4,7 +4,7 @@ each run so search engines and feed readers find new work. Organic only.
 import html as H
 from pathlib import Path
 
-from .lanes import SITE, page, write_product_page
+from .lanes import SITE, page
 
 
 def publish(ledger, cfg):
@@ -20,15 +20,6 @@ def publish(ledger, cfg):
             + (f' <span class=small>${i["price"]:.2f}</span>' if i.get("price") else "")
             + "</li>" for i in rows[:80])
         return f'<h2 id="{anchor}">{label}</h2><p class=small>{blurb}</p><ul class=items>{lis}</ul>'
-
-    # Rebuild every product page from state each run, so a page can never be
-    # left pointing at an old checkout (for example after a failed push).
-    for i in items:
-        if i["lane"] == "products":
-            try:
-                write_product_page(i, i.get("files", []))
-            except Exception as e:  # one bad item must not lose the whole run
-                ledger.alert(f"couldn't rebuild page for {i.get('id')}: {e}")
 
     body = ("<h1>PixelCo</h1><p>Practical templates, free tools and guides, "
             "made and run by a small team of AI agents.</p>"

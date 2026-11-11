@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en"><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; form-action 'none'; base-uri 'none'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Deposit and Milestone Payment Schedule Builder</title>
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--ink:#1d1d1f;--mute:#5f6368;--line:#dcdcd8;--acc:#2f6f5e;--warn:#a4372a;--ok:#2f6f5e;--soft:#eef4f1}
+@media (prefers-color-scheme:dark){:root{--bg:#141517;--card:#1e2023;--ink:#ececec;--mute:#a3a7ad;--line:#33363b;--acc:#6cc3a6;--warn:#f08a7a;--ok:#6cc3a6;--soft:#1f2b27}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:20px 16px 48px}h1{font-size:1.5rem;margin:.2em 0}p.lead{color:var(--mute);margin-top:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:16px 0}
+h2{font-size:1.05rem;margin:0 0 12px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+label{display:block;font-size:.85rem;color:var(--mute);margin-bottom:4px}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+.ms{display:grid;grid-template-columns:1fr 80px 90px 36px;gap:8px;align-items:end;margin-bottom:8px}
+.ms .hdr{font-size:.8rem;color:var(--mute)}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 12px;cursor:pointer}
+button.pri{background:var(--acc);border-color:var(--acc);color:var(--bg)}button.x{padding:8px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.status{padding:10px 12px;border-radius:8px;margin:0 0 12px;background:var(--soft)}.status.bad{color:var(--warn);background:transparent;border:1px solid var(--warn)}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.95rem}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.n,th.n{text-align:right}tfoot td{font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:10px}.stat b{display:block;font-size:1.2rem}.stat span{font-size:.8rem;color:var(--mute)}
+textarea{width:100%;min-height:180px;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+ul.tips{margin:0;padding-left:20px;color:var(--mute)}small{color:var(--mute)}
+@media (max-width:520px){.ms{grid-template-columns:1fr 64px 72px 32px}}
+</style></head><body><main>
+<h1>Deposit and Milestone Payment Schedule Builder</h1>
+<p class="lead">Split a freelance project into a deposit and milestone payments. See exactly what each invoice is, when it's due, and the most you could ever be owed at once.</p>
+
+<section class="card"><h2>Project</h2><div class="grid">
+<div><label for="total">Project total</label><input id="total" type="number" min="0" step="1" value="8400"></div>
+<div><label for="cur">Currency symbol</label><input id="cur" value="$" maxlength="4"></div>
+<div><label for="start">Start date</label><input id="start" type="date"></div>
+<div><label for="terms">Invoice due in (days)</label><input id="terms" type="number" min="0" value="7"></div>
+<div><label for="preset">Preset</label><select id="preset">
+<option value="">Choose a preset…</option><option value="small">Small: 50 / 50</option><option value="mid">Medium: 40 / 30 / 30</option><option value="big" >Large: 30 / 25 / 25 / 20</option><option value="xl">Very large: 25 + 5 × 15</option></select></div>
+</div></section>
+
+<section class="card"><h2>Payments</h2>
+<div class="ms"><span class="hdr">Milestone (what the client sees)</span><span class="hdr">%</span><span class="hdr">Week</span><span></span></div>
+<div id="list"></div>
+<div class="row"><button id="add">+ Add milestone</button><button id="even">Spread remaining evenly</button></div>
+<p><small>"Week" is when you expect to reach the milestone, counted from the start date. The deposit is due before the start.</small></p>
+</section>
+
+<section class="card"><h2>Schedule</h2>
+<p id="status" class="status"></p>
+<div class="stats"><div class="stat"><span>Deposit</span><b id="sDep">–</b></div><div class="stat"><span>Largest amount at risk</span><b id="sRisk">–</b></div><div class="stat"><span>Final payment</span><b id="sFin">–</b></div><div class="stat"><span>Last payment due</span><b id="sEnd">–</b></div></div>
+<div class="tw"><table><thead><tr><th>#</th><th>Payment</th><th class="n">%</th><th class="n">Amount</th><th>Invoice</th><th>Due</th></tr></thead><tbody id="tb"></tbody><tfoot><tr><td></td><td>Total</td><td class="n" id="tp"></td><td class="n" id="ta"></td><td></td><td></td></tr></tfoot></table></div>
+<p id="advice" style="margin-bottom:0"></p>
+</section>
+
+<section class="card"><h2>Copy into your proposal</h2>
+<textarea id="out" readonly></textarea>
+<div class="row"><button class="pri" id="copy">Copy text</button><button id="copycsv">Copy as CSV</button><span id="copied" style="align-self:center;color:var(--ok)"></span></div>
+</section>
+
+<section class="card"><h2>Tips</h2><ul class="tips">
+<li>Tie each milestone to something the client can see and approve, not hours worked.</li>
+<li>Keep the final payment smaller than the deposit where you can: it's the one most likely to slip.</li>
+<li>Release final files once the final payment clears.</li>
+<li>Amounts are rounded to whole units; any rounding difference goes on the final payment so the total always matches.</li>
+<li>Everything runs in your browser. Nothing is saved or sent anywhere.</li>
+</ul></section>
+</main>
+<script>
+var PRESETS={
+ small:[["Deposit",50,0],["Final delivery",50,2]],
+ mid:[["Deposit",40,0],["First draft approved",30,2],["Final delivery",30,4]],
+ big:[["Deposit",30,0],["Design direction approved",25,3],["All designs approved",25,6],["Launch and handover",20,10]],
+ xl:[["Deposit",25,0],["Phase 1 complete",15,3],["Phase 2 complete",15,6],["Phase 3 complete",15,9],["Phase 4 complete",15,12],["Launch and handover",15,15]]
+};
+var rows=PRESETS.big.map(function(r){return r.slice()});
+var $=function(id){return document.getElementById(id)};
+function today(){var d=new Date();d.setHours(0,0,0,0);return d}
+function iso(d){var m=d.getMonth()+1,day=d.getDate();return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(day<10?"0":"")+day}
+function nice(d){return d.toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"})}
+function addDays(d,n){var x=new Date(d.getTime());x.setDate(x.getDate()+n);return x}
+function money(n){var c=$("cur").value||"";return c+Math.round(n).toLocaleString()}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+$("start").value=iso(addDays(today(),7));
+
+function drawList(){
+ var h="";rows.forEach(function(r,i){
+  h+='<div class="ms"><input aria-label="Milestone name" data-i="'+i+'" data-k="0" value="'+esc(r[0])+'">'+
+  '<input aria-label="Percent" type="number" min="0" max="100" step="1" data-i="'+i+'" data-k="1" value="'+r[1]+'">'+
+  '<input aria-label="Week" type="number" min="0" step="1" data-i="'+i+'" data-k="2" value="'+r[2]+'"'+(i===0?' disabled title="Deposit is due before the start"':'')+'>'+
+  (i===0?'<span></span>':'<button class="x" aria-label="Remove" data-del="'+i+'">✕</button>')+'</div>';
+ });$("list").innerHTML=h;
+}
+$("list").addEventListener("input",function(e){var t=e.target,i=+t.dataset.i,k=+t.dataset.k;if(isNaN(i))return;rows[i][k]=k===0?t.value:(parseFloat(t.value)||0);calc()});
+$("list").addEventListener("click",function(e){var d=e.target.dataset.del;if(d!==undefined){rows.splice(+d,1);drawList();calc()}});
+$("add").onclick=function(){var last=rows[rows.length-1];rows.push(["New milestone",0,(last?last[2]:0)+2]);drawList();calc()};
+$("even").onclick=function(){var dep=rows[0][1],n=rows.length-1;if(n<1)return;var rest=100-dep,each=Math.floor(rest/n);for(var i=1;i<=n;i++)rows[i][1]=each;rows[n][1]+=rest-each*n;drawList();calc()};
+$("preset").onchange=function(){var p=PRESETS[this.value];if(p){rows=p.map(function(r){return r.slice()});drawList();calc()}this.value=""};
+["total","cur","start","terms"].forEach(function(id){$(id).addEventListener("input",calc)});
+
+var lastText="",lastCsv="";
+function calc(){
+ var total=Math.max(0,parseFloat($("total").value)||0),terms=Math.max(0,parseInt($("terms").value)||0);
+ var sd=$("start").value?new Date($("start").value+"T00:00:00"):today();
+ var pct=rows.reduce(function(a,r){return a+(+r[1]||0)},0);
+ var st=$("status");
+ if(Math.abs(pct-100)>0.001){st.className="status bad";st.textContent="Percentages add up to "+pct+"%. Adjust them to total exactly 100% (or use \"Spread remaining evenly\").";}
+ else{st.className="status";st.textContent="Percentages add up to 100%. Schedule below.";}
+ var amts=rows.map(function(r){return Math.round(total*(+r[1]||0)/100)});
+ if(Math.abs(pct-100)<0.001&&amts.length)amts[amts.length-1]+=Math.round(total)-amts.reduce(function(a,b){return a+b},0);
+ var h="",txt=[],csv=["Milestone #,Milestone,Percent,Amount,Invoice date,Due date"],risk=0,endD=null;
+ txt.push("Payment schedule ("+money(total)+" total)");txt.push("");
+ rows.forEach(function(r,i){
+  var inv,due;
+  if(i===0){inv=today();due=addDays(sd,-1);if(due<inv)due=inv}
+  else{inv=addDays(sd,(+r[2]||0)*7);due=addDays(inv,terms)}
+  endD=due;if(i>0)risk=Math.max(risk,amts[i]);
+  h+="<tr><td>"+i+"</td><td>"+esc(r[0])+"</td><td class=n>"+(+r[1]||0)+"%</td><td class=n>"+money(amts[i])+"</td><td>"+(i===0?"On signing":nice(inv))+"</td><td>"+(i===0?"Before start ("+nice(due)+")":nice(due))+"</td></tr>";
+  txt.push((i===0?"Deposit":i+". "+r[0])+" - "+(+r[1]||0)+"% ("+money(amts[i])+") - "+(i===0?"due on signing, before work starts on "+nice(sd):"invoiced at the milestone (planned "+nice(inv)+"), due within "+terms+" days"));
+  csv.push([i,'"'+String(r[0]).replace(/"/g,'""')+'"',(+r[1]||0)+"%",amts[i],i===0?iso(today()):iso(inv),iso(due)].join(","));
+ });
+ txt.push("");txt.push("Work begins once the deposit has cleared. Final files are released when the final payment is received.");
+ $("tb").innerHTML=h;$("tp").textContent=pct+"%";$("ta").textContent=money(amts.reduce(function(a,b){return a+b},0));
+ $("sDep").textContent=amts.length?money(amts[0]):"–";$("sRisk").textContent=rows.length>1?money(risk):"–";
+ $("sFin").textContent=amts.length>1?money(amts[amts.length-1]):"–";$("sEnd").textContent=endD?nice(endD):"–";
+ var adv=[];
+ if(rows.length>1&&amts[amts.length-1]>amts[0])adv.push("Your final payment is larger than the deposit. Consider moving some of it earlier.");
+ if(rows[0][1]<20&&total>0)adv.push("A deposit under 20% gives you little protection if the client cancels early.");
+ if(total>=5000&&rows.length<3)adv.push("For a project this size, adding a milestone keeps the amount you're owed at any one time smaller.");
+ if(total>0&&risk>total*0.4)adv.push("One payment is over 40% of the project. Splitting it would lower your risk.");
+ $("advice").textContent=adv.length?adv.join(" "):(pct===100?"Looks balanced: no single payment leaves you heavily exposed.":"");
+ lastText=txt.join("\n");lastCsv=csv.join("\n");$("out").value=lastText;
+}
+function copy(s){var ta=$("out");var keep=ta.value;ta.value=s;ta.select();var ok=false;try{ok=document.execCommand("copy")}catch(e){}
+ if(navigator.clipboard&&!ok){navigator.clipboard.writeText(s).then(function(){},function(){})}ta.value=keep;$("copied").textContent="Copied";setTimeout(function(){$("copied").textContent=""},1500)}
+$("copy").onclick=function(){copy(lastText)};$("copycsv").onclick=function(){copy(lastCsv)};
+drawList();calc();
+</script><p style="text-align:center;margin:2em 0;font:14px system-ui"><a href="../../">More free tools from PixelCo</a></p></body></html>

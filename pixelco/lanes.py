@@ -41,6 +41,8 @@ def build_tool(spec, ledger, cfg, stripe=None):
 
 def build_product(spec, ledger, cfg, stripe):
     slug, price = spec["slug"], spec["price"]
+    included = bundle_parts(spec, ledger)   # fail before writing anything
+    value = round(sum(float(p.get("price") or 0) for p in included), 2)
     # Delivery: zip at an unguessable path, only revealed after checkout.
     token = secrets.token_urlsafe(18)
     dl = SITE / "dl" / token
@@ -49,6 +51,12 @@ def build_product(spec, ledger, cfg, stripe):
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         for name, body in spec["files"].items():
             z.writestr(name, body)
+        for part in included:
+            kit_slug = part["url"].strip("/").split("/")[-1]
+            with zipfile.ZipFile(SITE / "dl" / part["dl"] / f"{kit_slug}.zip") as kit:
+                for n in kit.namelist():
+                    if n != "LICENSE.txt" and not n.endswith("/"):
+                        z.writestr(f"{kit_slug}/{n}", kit.read(n))
         z.writestr("LICENSE.txt",
                    "You may use these files for personal and business work.\n"
                    "Please don't resell or share them as-is.\n")
@@ -63,11 +71,32 @@ def build_product(spec, ledger, cfg, stripe):
     item = {"id": f"product-{slug}", "lane": "products", "title": spec["title"],
             "price": price, "description": spec["description"], "url": f"shop/{slug}/",
             "dl": token, "files": list(spec["files"])}
-    attach_checkout(item, cfg, stripe)
+    if included:
+        item["includes"] = [p["id"] for p in included]
+        item["value"] = value
+    attach_checkout(item, cfg, stripe, ledger)
     return item
 
 
-def attach_checkout(item, cfg, stripe):
+def bundle_parts(spec, ledger):
+    """The kits a bundle packs in. Raises ValueError if any isn't a built kit."""
+    parts = []
+    for s in spec.get("includes") or []:
+        it = next((i for i in ledger.state["items"] if i["id"] == f"product-{s}"), None)
+        if not it or it.get("includes") or not it.get("dl"):
+            raise ValueError(f"bundle part not in the shop (or is a bundle): {s}")
+        if not (SITE / "dl" / it["dl"] / f"{s}.zip").is_file():
+            raise ValueError(f"bundle part's download is missing: {s}")
+        parts.append(it)
+    if parts:
+        value = sum(float(p.get("price") or 0) for p in parts)
+        if not 0.3 * value <= spec["price"] <= 0.9 * value:
+            raise ValueError(f"bundle price ${spec['price']:.2f} must be 30-90% "
+                             f"of its kits' ${value:.2f}")
+    return parts
+
+
+def attach_checkout(item, cfg, stripe, ledger=None):
     """Create the Stripe checkout for a product (retried each run until it works)."""
     if stripe.enabled and not item.get("buy_url"):
         base = cfg.get("site_url", "").rstrip("/")
@@ -76,7 +105,16 @@ def attach_checkout(item, cfg, stripe):
             item["stripe_link"] = buy["id"]
             item["buy_url"] = buy["url"]
             item["stripe_mode"] = stripe.mode
-    write_product_page(item, item.get("files", []))
+    write_product_page(item, item.get("files", []), ledger)
+
+
+def bundle_for(item, ledger):
+    """The biggest buyable bundle that contains this product, if any."""
+    if not ledger or item.get("includes"):
+        return None
+    bs = [b for b in ledger.state["items"]
+          if item["id"] in (b.get("includes") or []) and b.get("buy_url")]
+    return max(bs, key=lambda b: len(b["includes"]), default=None)
 
 
 def link_mode(item):
@@ -104,15 +142,32 @@ def reset_checkout(item):
     return f"download folder missing for {item.get('title', item.get('id'))}; old link may still work"
 
 
-def write_product_page(item, files):
+def write_product_page(item, files, ledger=None):
     price = float(item.get("price") or 0)
     desc = item.get("description") or ""
     buy = (f'<p><a class=btn href="{H.escape(item["buy_url"])}">Buy for ${price:.2f}</a></p>'
            if item.get("buy_url") else "<p><i>Checkout opens soon.</i></p>")
+    inside = "".join(f"<li>{H.escape(n)}</li>" for n in files)
+    value = ""
+    if item.get("includes") and ledger:
+        by_id = {i["id"]: i for i in ledger.state["items"]}
+        parts = [by_id[k] for k in item["includes"] if k in by_id]
+        inside += "".join(f'<li><a href="../../{p["url"]}">{H.escape(p["title"])}</a> '
+                          f'<span class=small>(${float(p.get("price") or 0):.2f} alone)</span></li>'
+                          for p in parts)
+        if item.get("value", 0) > price:
+            value = (f'<p class=small>{len(parts)} kits worth ${item["value"]:.2f} if bought '
+                     f'separately. You save ${item["value"] - price:.2f}.</p>')
+    upsell = ""
+    b = bundle_for(item, ledger)
+    if b:
+        upsell = (f'<aside class=deal><b>Better value:</b> get this kit and '
+                  f'{len(b["includes"]) - 1} more in the <a href="../../{b["url"]}">'
+                  f'{H.escape(b["title"])}</a> for ${b["price"]:.2f}.</aside>')
     body = (f"<h1>{H.escape(item['title'])}</h1><p>{H.escape(desc)}</p>"
-            f"<p class=price>${price:.2f}</p>{buy}"
+            f"<p class=price>${price:.2f}</p>{value}{buy}{upsell}"
             "<h2>What's inside</h2><ul>"
-            + "".join(f"<li>{H.escape(n)}</li>" for n in files)
+            + inside
             + "<li>LICENSE.txt</li></ul>"
             "<p class=small>Instant download after checkout. Payments are processed by Stripe. "
             'See our <a href="../../refunds/">refund policy</a>.</p>')
@@ -143,6 +198,7 @@ a{color:var(--accent)}h1{line-height:1.2;text-wrap:balance}
 .price{font-size:24px;font-weight:700}.small{font-size:14px;color:var(--dim)}
 ul.items{list-style:none;padding:0}ul.items li{padding:8px 0;border-bottom:1px solid var(--line)}
 aside{margin-top:40px;padding-top:12px;border-top:1px solid var(--line)}
+aside.deal{margin:20px 0;padding:12px 16px;border:2px solid var(--btn);border-radius:8px}
 """
 
 

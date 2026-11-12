@@ -1,0 +1,22 @@
+{
+  "_about": "Optional store copy per kit, keyed by the kit's slug. Shown on the storefront card and product page. Every claim must be true of the files actually in the kit: no invented results, reviews, testimonials or guarantees. Fields: tagline (one sentence, <=170 chars), who_for (1-2 sentences), outcomes (3-6 short lines), file_notes (file name -> one line on what that file is and does).",
+  "freelance-proposal-kit": {
+    "tagline": "Turn \"can you send me a quote?\" into a proposal the client can say yes to, with three priced options and follow-ups for every stage.",
+    "who_for": "Solo freelancers and small studios who write proposals for client projects and want them to look professional without starting from a blank page each time.",
+    "outcomes": [
+      "Send a clear, one-to-three-page proposal built on a completed example",
+      "Offer Essential, Standard and Complete options instead of a single yes/no price",
+      "Know exactly what to send at each stage after the proposal goes out",
+      "Catch the mistakes that lose work with a five-minute pre-send check",
+      "See which proposals win, at what price, and why"
+    ],
+    "file_notes": {
+      "README.md": "Start here: what's in the kit, the order to use it in, and how to adapt it",
+      "proposal-template.md": "Fill-in proposal template plus a fully completed example to copy from",
+      "pricing-options.md": "How to build three priced options, with worked maths",
+      "follow-up-emails.md": "Seven short emails with timing, from sending the proposal to a polite close",
+      "proposal-checklist.md": "Pre-send checklist covering the client's problem, scope, price and terms",
+      "proposal-tracker.csv": "Spreadsheet to log every proposal, its options, follow-ups, outcome and why you won or lost"
+    }
+  }
+}

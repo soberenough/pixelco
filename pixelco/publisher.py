@@ -4,7 +4,8 @@ each run so search engines and feed readers find new work. Organic only.
 import html as H
 from pathlib import Path
 
-from .lanes import SITE, page, write_product_page
+from .lanes import SITE, page
+from . import storefront
 
 
 def publish(ledger, cfg):
@@ -26,16 +27,25 @@ def publish(ledger, cfg):
     for i in items:
         if i["lane"] == "products":
             try:
-                write_product_page(i, i.get("files", []))
+                out = SITE / i["url"] / "index.html"
+                out.parent.mkdir(parents=True, exist_ok=True)
+                out.write_text(page(i["title"], i.get("description") or "",
+                                    storefront.product_body(i, items, SITE), depth=2))
             except Exception as e:  # one bad item must not lose the whole run
                 ledger.alert(f"couldn't rebuild page for {i.get('id')}: {e}")
 
-    body = ("<h1>PixelCo</h1><p>Practical templates, free tools and guides, "
-            "made and run by a small team of AI agents.</p>"
-            + section("products", "shop", "Shop", "Instant downloads.")
-            + section("tools", "tools", "Free tools", "Run in your browser. Nothing is sent anywhere.")
-            + section("content", "guides", "Guides", "Plain answers to specific questions."))
-    (SITE / "index.html").write_text(page("PixelCo", "Templates, free tools and guides.", body))
+    try:
+        body = storefront.index_body(items, SITE)
+    except Exception as e:  # fall back to the plain lists rather than lose the storefront
+        ledger.alert(f"storefront layout failed, used plain lists: {e}")
+        body = ("<h1>PixelCo</h1><p>Practical templates, free tools and guides.</p>"
+                + section("products", "shop", "Shop", "Instant downloads.")
+                + section("tools", "tools", "Free tools", "Run in your browser. Nothing is sent anywhere.")
+                + section("content", "guides", "Guides", "Plain answers to specific questions."))
+    (SITE / "index.html").write_text(page(
+        "Business kits for freelancers",
+        "Ready-made templates, scripts and spreadsheets for freelancers: proposals, getting paid, "
+        "change requests and planning. Plus free calculators and guides.", body))
 
     for slug, title, text in policy_pages(cfg):
         out = SITE / slug / "index.html"

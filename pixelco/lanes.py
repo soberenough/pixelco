@@ -23,7 +23,7 @@ def build_content(spec, ledger, cfg, stripe=None):
     out.write_text(page(spec["title"], spec["description"],
                         f"<article>{body}</article>" + _crosssell(ledger), depth=2))
     return {"id": f"content-{slug}", "lane": "content", "title": spec["title"],
-            "url": f"blog/{slug}/"}
+            "url": f"blog/{slug}/", "description": spec["description"]}
 
 
 def build_tool(spec, ledger, cfg, stripe=None):
@@ -36,7 +36,7 @@ def build_tool(spec, ledger, cfg, stripe=None):
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(html)
     return {"id": f"tool-{slug}", "lane": "tools", "title": spec["title"],
-            "url": f"tools/{slug}/"}
+            "url": f"tools/{slug}/", "description": spec["description"]}
 
 
 def build_product(spec, ledger, cfg, stripe):
@@ -144,6 +144,9 @@ a{color:var(--accent)}h1{line-height:1.2;text-wrap:balance}
 ul.items{list-style:none;padding:0}ul.items li{padding:8px 0;border-bottom:1px solid var(--line)}
 aside{margin-top:40px;padding-top:12px;border-top:1px solid var(--line)}
 """
+
+from .storefront import STYLE_EXTRA  # noqa: E402  (storefront layout styles)
+STYLE += STYLE_EXTRA
 
 
 def page(title, description, body, depth=0, index=True):

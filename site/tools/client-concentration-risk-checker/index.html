@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en"><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; form-action 'none'; base-uri 'none'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Freelance Client Concentration Risk Checker</title>
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--ink:#1d1d1f;--mute:#5f6368;--line:#dcdcd8;--acc:#2f6f5e;--warn:#a4372a;--mid:#9a6a12;--soft:#eef4f1}
+@media (prefers-color-scheme:dark){:root{--bg:#141517;--card:#1e2023;--ink:#ececec;--mute:#a3a7ad;--line:#33363b;--acc:#6cc3a6;--warn:#f08a7a;--mid:#e0b45a;--soft:#1f2b27}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:20px 16px 48px}h1{font-size:1.5rem;margin:.2em 0}p.lead{color:var(--mute);margin-top:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:16px 0}
+h2{font-size:1.05rem;margin:0 0 12px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+label{display:block;font-size:.85rem;color:var(--mute);margin-bottom:4px}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+.cl{display:grid;grid-template-columns:1fr 110px 36px;gap:8px;align-items:center;margin-bottom:8px}
+.hdr{font-size:.8rem;color:var(--mute)}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 12px;cursor:pointer}
+button.pri{background:var(--acc);border-color:var(--acc);color:var(--bg)}button.x{padding:8px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.verdict{padding:12px;border-radius:8px;margin:0 0 12px;border:1px solid var(--line)}
+.verdict b{display:block;font-size:1.1rem}
+.v-low{border-color:var(--acc);background:var(--soft)}.v-mid{border-color:var(--mid)}.v-high{border-color:var(--warn)}
+.v-high b{color:var(--warn)}.v-mid b{color:var(--mid)}.v-low b{color:var(--acc)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:10px}.stat b{display:block;font-size:1.2rem}.stat span{font-size:.8rem;color:var(--mute)}
+.bar{display:grid;grid-template-columns:minmax(80px,160px) 1fr 64px;gap:8px;align-items:center;margin:6px 0;font-size:.92rem}
+.bar .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.track{height:14px;background:var(--bg);border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.fill{height:100%;background:var(--acc)}.fill.mid{background:var(--mid)}.fill.high{background:var(--warn)}
+.n{text-align:right;font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.93rem}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+th.n,td.n{text-align:right}
+textarea{width:100%;min-height:150px;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+ul.tips{padding-left:20px;margin:0}ul.tips li{margin:4px 0}
+small.note{color:var(--mute);display:block;margin-top:8px}
+</style></head>
+<body><main>
+<h1>Client Concentration Risk Checker</h1>
+<p class="lead">How much of your freelance income depends on one or two clients, and what happens if one leaves? Enter what each client paid you, and see your exposure, a "lose this client" test for each, and how long your savings would cover the gap. Everything stays in your browser.</p>
+
+<section class="card">
+<h2>1. Your clients</h2>
+<div class="grid" style="margin-bottom:12px">
+<div><label for="period">Amounts entered are per</label>
+<select id="period"><option value="12">year (last 12 months)</option><option value="1">month (average)</option><option value="3">quarter</option></select></div>
+<div><label for="cur">Currency symbol</label><input id="cur" value="$" maxlength="4"></div>
+</div>
+<div class="cl"><span class="hdr">Client</span><span class="hdr">Amount</span><span></span></div>
+<div id="clients"></div>
+<div class="row"><button id="add">+ Add client</button><button id="ex">Load example</button><button id="clr">Clear</button></div>
+</section>
+
+<section class="card">
+<h2>2. Your safety net (optional)</h2>
+<div class="grid">
+<div><label for="exp">Monthly essential costs (business + personal)</label><input id="exp" type="number" min="0" step="50" inputmode="decimal" placeholder="e.g. 3200"></div>
+<div><label for="sav">Savings you could draw on</label><input id="sav" type="number" min="0" step="100" inputmode="decimal" placeholder="e.g. 9000"></div>
+<div><label for="ramp">Months to replace a lost client</label><input id="ramp" type="number" min="1" max="24" step="1" value="3"></div>
+</div>
+<small class="note">Used for the "lose this client" test. Leave blank to skip.</small>
+</section>
+
+<section class="card" id="out">
+<h2>3. Results</h2>
+<div id="results"><p class="hdr">Add at least one client with an amount above zero.</p></div>
+</section>
+
+<section class="card">
+<h2>Summary to copy</h2>
+<textarea id="sum" readonly></textarea>
+<div class="row"><button class="pri" id="copy">Copy summary</button><span id="copied" class="hdr" style="align-self:center"></span></div>
+</section>
+
+<section class="card">
+<h2>How to read this</h2>
+<ul class="tips">
+<li><b>Top client share</b> is the percent of your income from your biggest client. Many freelancers aim to keep it under about 30-40%; above 50% you're closer to an employee without the protections.</li>
+<li><b>Top 3 share</b> shows whether a few clients carry everything. Above 80% with only a handful of clients is fragile.</li>
+<li><b>Effective number of clients</b> answers: "my income is as spread out as if I had N equal clients." Five clients where one pays 70% behave like fewer than two.</li>
+<li><b>Lose-a-client test</b>: the monthly gap if that client stopped tomorrow, and whether your savings cover it for the time it takes to replace them.</li>
+<li>These thresholds are rules of thumb, not financial advice. A big, stable, long-contract client can be fine; a small, unpredictable one can still hurt.</li>
+</ul>
+</section>
+</main>
+<script>
+(function(){
+var list=document.getElementById('clients');
+function el(t,a){var e=document.createElement(t);for(var k in a)e[k]=a[k];return e;}
+function addRow(name,amt){
+ var r=el('div',{className:'cl'});
+ var n=el('input',{type:'text',placeholder:'Client name',value:name||''});n.setAttribute('aria-label','Client name');
+ var a=el('input',{type:'number',min:'0',step:'50',placeholder:'0',value:amt==null?'':amt});a.setAttribute('aria-label','Amount');a.setAttribute('inputmode','decimal');
+ var x=el('button',{className:'x',textContent:'×',title:'Remove'});x.setAttribute('aria-label','Remove client');
+ x.addEventListener('click',function(){r.remove();calc();});
+ n.addEventListener('input',calc);a.addEventListener('input',calc);
+ r.appendChild(n);r.appendChild(a);r.appendChild(x);list.appendChild(r);
+}
+function num(id){var v=parseFloat(document.getElementById(id).value);return isFinite(v)&&v>0?v:0;}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function money(v){var c=document.getElementById('cur').value||'';return c+Math.round(v).toLocaleString();}
+function pct(v){return (v*100).toFixed(v<0.1?1:0)+'%';}
+function level(s){return s>=0.5?'high':(s>=0.3?'mid':'low');}
+function calc(){
+ var per=parseFloat(document.getElementById('period').value);
+ var rows=[].slice.call(list.children).map(function(r,i){var ins=r.querySelectorAll('input');var v=parseFloat(ins[1].value);return {name:ins[0].value.trim()||('Client '+(i+1)),amt:isFinite(v)&&v>0?v:0};}).filter(function(c){return c.amt>0;});
+ var out=document.getElementById('results'),sum=document.getElementById('sum');
+ if(!rows.length){out.innerHTML='<p class="hdr">Add at least one client with an amount above zero.</p>';sum.value='';return;}
+ rows.sort(function(a,b){return b.amt-a.amt;});
+ var total=rows.reduce(function(s,c){return s+c.amt;},0);
+ var hhi=0;rows.forEach(function(c){c.share=c.amt/total;c.monthly=c.amt/per;hhi+=c.share*c.share;});
+ var eff=1/hhi,top=rows[0].share,top3=rows.slice(0,3).reduce(function(s,c){return s+c.share;},0);
+ var monthlyTotal=total/per,exp=num('exp'),sav=num('sav'),ramp=Math.max(1,num('ramp')||3);
+ var lv=level(top),msg;
+ if(lv==='high')msg=['High concentration','Over half your income comes from '+rows[0].name+'. If they pause, cut budget or leave, most of your income goes with them. Start adding clients or a second income stream now, while things are good.'];
+ else if(lv==='mid')msg=['Moderate concentration','Your biggest client is a large share but not a majority. Worth watching. Aim to grow the others so no single client is above about a third.'];
+ else msg=['Well spread','No single client dominates your income. Losing one would hurt, but it would not sink you.'];
+ if(rows.length<3&&lv!=='high')msg[1]+=' With fewer than three clients, any loss is still a big swing.';
+ var h='<div class="verdict v-'+lv+'"><b>'+msg[0]+'</b>'+esc(msg[1])+'</div>';
+ h+='<div class="stats">'+
+ '<div class="stat"><b>'+pct(top)+'</b><span>Top client share</span></div>'+
+ '<div class="stat"><b>'+pct(top3)+'</b><span>Top 3 share</span></div>'+
+ '<div class="stat"><b>'+eff.toFixed(1)+'</b><span>Effective number of clients (of '+rows.length+')</span></div>'+
+ '<div class="stat"><b>'+money(monthlyTotal)+'</b><span>Average monthly income</span></div></div>';
+ rows.forEach(function(c){var l=level(c.share);h+='<div class="bar"><span class="name" title="'+esc(c.name)+'">'+esc(c.name)+'</span><div class="track"><div class="fill '+(l==='low'?'':l)+'" style="width:'+(c.share*100).toFixed(1)+'%"></div></div><span class="n">'+pct(c.share)+'</span></div>';});
+ h+='<h2 style="margin-top:16px">Lose-a-client test</h2><div class="tw"><table><thead><tr><th>If you lose</th><th class="n">Monthly drop</th><th class="n">Income left</th>'+(exp?'<th class="n">Monthly shortfall</th><th>Savings cover '+ramp+' mo?</th>':'')+'</tr></thead><tbody>';
+ var lines=[];
+ rows.forEach(function(c){
+  var left=monthlyTotal-c.monthly,short=Math.max(0,exp-left),cover='';
+  if(exp){
+   if(short===0)cover='No gap';
+   else{var months=sav/short;cover=months>=ramp?'Yes ('+months.toFixed(1)+' mo)':'<b style="color:var(--warn)">No ('+months.toFixed(1)+' mo)</b>';}
+  }
+  h+='<tr><td>'+esc(c.name)+'</td><td class="n">'+money(c.monthly)+'</td><td class="n">'+money(left)+'</td>'+(exp?'<td class="n">'+(short?money(short):'-')+'</td><td>'+cover+'</td>':'')+'</tr>';
+  lines.push('- Lose '+c.name+' ('+pct(c.share)+'): -'+money(c.monthly)+'/mo, '+money(left)+'/mo left'+(exp?(short?', shortfall '+money(short)+'/mo, savings last '+(sav/short).toFixed(1)+' mo':', costs still covered'):''));
+ });
+ h+='</tbody></table></div>';
+ if(exp){var need=Math.max(0,exp-(monthlyTotal-rows[0].monthly))*ramp;h+='<small class="note">To ride out losing your biggest client for '+ramp+' months you need about '+money(need)+' in savings'+(sav>=need?' - you have that.':' - you are short by '+money(need-sav)+'.')+'</small>';}
+ out.innerHTML=h;
+ sum.value='Client concentration check\n'+msg[0]+': '+msg[1]+'\n\nClients: '+rows.length+' (effective '+eff.toFixed(1)+')\nTop client: '+rows[0].name+' '+pct(top)+'\nTop 3 share: '+pct(top3)+'\nAverage monthly income: '+money(monthlyTotal)+'\n\n'+lines.join('\n');
+}
+function example(){list.innerHTML='';[['Agency retainer',38000],['SaaS startup',14500],['Local bakery',6000],['Nonprofit',4200],['One-off projects',3300]].forEach(function(r){addRow(r[0],r[1]);});
+ document.getElementById('period').value='12';document.getElementById('exp').value='4200';document.getElementById('sav').value='9000';document.getElementById('ramp').value='3';calc();}
+document.getElementById('add').addEventListener('click',function(){addRow();});
+document.getElementById('ex').addEventListener('click',example);
+document.getElementById('clr').addEventListener('click',function(){list.innerHTML='';addRow();addRow();addRow();calc();});
+['period','cur','exp','sav','ramp'].forEach(function(id){document.getElementById(id).addEventListener('input',calc);});
+document.getElementById('copy').addEventListener('click',function(){var t=document.getElementById('sum'),m=document.getElementById('copied');t.select();
+ function ok(){m.textContent='Copied';setTimeout(function(){m.textContent='';},1500);}
+ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t.value).then(ok,function(){try{document.execCommand('copy');ok();}catch(e){}});}else{try{document.execCommand('copy');ok();}catch(e){}}});
+example();
+})();
+</script>
+<p style="text-align:center;margin:2em 0;font:14px system-ui"><a href="../../">More free tools from PixelCo</a></p></body></html>

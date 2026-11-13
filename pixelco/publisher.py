@@ -4,13 +4,14 @@ each run so search engines and feed readers find new work. Organic only.
 import html as H
 from pathlib import Path
 
-from .lanes import SITE, page
+from .lanes import SITE, page, ADS, ads_head
 from . import storefront
 
 
 def publish(ledger, cfg):
     items = ledger.state["items"]
     base = cfg.get("site_url", "").rstrip("/")
+    ADS["client"] = ((cfg.get("ads") or {}).get("adsense_client") or "").strip()
 
     def section(lane, anchor, label, blurb):
         rows = [i for i in items if i["lane"] == lane][::-1]
@@ -65,6 +66,11 @@ def publish(ledger, cfg):
         '<?xml version="1.0"?><rss version="2.0"><channel><title>PixelCo</title>'
         f"<link>{base}/</link><description>New from PixelCo</description>{feed}</channel></rss>")
     (SITE / ".nojekyll").write_text("")
+    if ads_head():  # ads.txt authorises Google to sell ads on this site
+        pub = ADS["client"].replace("ca-", "", 1)
+        (SITE / "ads.txt").write_text(f"google.com, {pub}, DIRECT, f08c47fec0942fa0\n")
+    elif (SITE / "ads.txt").exists():
+        (SITE / "ads.txt").unlink()
     ledger.event("marketer", f"storefront, policies, sitemap and feed updated ({len(items)} items)")
 
 
@@ -92,9 +98,16 @@ def policy_pages(cfg):
          "automated checks. They are general information, not professional legal, financial "
          "or medical advice.</p>"),
         ("privacy", "Privacy",
-         "<p>This site has no accounts, no cookies, no analytics and no tracking scripts. "
-         "Our free tools run entirely in your browser and send nothing anywhere.</p>"
-         "<p>When you buy, payment details go directly to Stripe. PixelCo never sees your card "
+         (("<p>This site shows ads from Google AdSense. Google and its partners may use cookies "
+           "to show ads based on your visits to this and other sites. You can turn off "
+           "personalized ads at <a href=\"https://adssettings.google.com\">Google Ads Settings</a>. "
+           "See <a href=\"https://policies.google.com/technologies/ads\">how Google uses data "
+           "from sites that show its ads</a>.</p><p>PixelCo itself has no accounts and no analytics. "
+           "Our free tools run entirely in your browser and send nothing anywhere.</p>")
+          if ads_head() else
+          "<p>This site has no accounts, no cookies, no analytics and no tracking scripts. "
+          "Our free tools run entirely in your browser and send nothing anywhere.</p>")
+         + "<p>When you buy, payment details go directly to Stripe. PixelCo never sees your card "
          "details and does not store your name or email. See Stripe's privacy policy for how "
          "they handle your data.</p>"),
     ]

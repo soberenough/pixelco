@@ -5,6 +5,7 @@ tools     - offline single-file web tools; earn through tips and cross-sells
 products  - downloadable kits sold through Stripe checkout links
 """
 import html as H
+import re
 import io
 import secrets
 import zipfile
@@ -149,6 +150,20 @@ from .storefront import STYLE_EXTRA  # noqa: E402  (storefront layout styles)
 STYLE += STYLE_EXTRA
 
 
+# Display ads (Google AdSense Auto ads). Off unless config.yaml sets ads.adsense_client
+# to a "ca-pub-..." id; set at the start of each run by run.py / publisher.py.
+ADS = {"client": ""}
+
+
+def ads_head():
+    c = (ADS.get("client") or "").strip()
+    if not re.fullmatch(r"ca-pub-\d{10,20}", c):
+        return ""
+    return (f'<meta name="google-adsense-account" content="{c}">'
+            f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={c}" '
+            'crossorigin="anonymous"></script>')
+
+
 def page(title, description, body, depth=0, index=True):
     up = "../" * depth
     robots = "" if index else '<meta name="robots" content="noindex">'
@@ -157,7 +172,7 @@ def page(title, description, body, depth=0, index=True):
         "<meta name=viewport content='width=device-width,initial-scale=1'>"
         f"<title>{H.escape(title)} · PixelCo</title>"
         f'<meta name="description" content="{H.escape(description)}">{robots}'
-        f"<style>{STYLE}</style></head><body><div class=wrap>"
+        f"<style>{STYLE}</style>{ads_head()}</head><body><div class=wrap>"
         f'<nav><b><a href="{up}./">PixelCo</a></b><a href="{up}./#shop">Shop</a>'
         f'<a href="{up}./#tools">Free tools</a><a href="{up}./#guides">Guides</a></nav>'
         f"{body}"

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en"><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; form-action 'none'; base-uri 'none'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Freelance Invoice Maker</title>
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--ink:#1d1d1f;--mute:#5f6368;--line:#dcdcd8;--acc:#2f6f5e;--warn:#a4372a;--soft:#eef4f1;--paper:#fff;--pink:#1d1d1f}
+@media (prefers-color-scheme:dark){:root{--bg:#141517;--card:#1e2023;--ink:#ececec;--mute:#a3a7ad;--line:#33363b;--acc:#6cc3a6;--warn:#f08a7a;--soft:#1f2b27}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}h1{font-size:1.5rem;margin:.2em 0}p.lead{color:var(--mute);margin-top:0}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.cols{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:0 0 16px}
+h2{font-size:1.05rem;margin:0 0 12px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+label{display:block;font-size:.85rem;color:var(--mute);margin-bottom:3px}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+textarea{min-height:64px;resize:vertical}
+.li{display:grid;grid-template-columns:1fr 70px 100px 36px;gap:6px;margin-bottom:6px}
+.hdr{font-size:.8rem;color:var(--mute)}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 12px;cursor:pointer}
+button.pri{background:var(--acc);border-color:var(--acc);color:var(--bg)}button.x{padding:8px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.checks{list-style:none;padding:0;margin:0;font-size:.92rem}.checks li{padding:3px 0}
+.ok{color:var(--acc)}.bad{color:var(--warn)}
+.small{font-size:.82rem;color:var(--mute)}
+#inv{background:#fff;color:#1d1d1f;border:1px solid var(--line);border-radius:12px;padding:28px;font-size:14px;position:sticky;top:12px}
+#inv h3{font-size:1.6rem;margin:0 0 4px;letter-spacing:.02em}
+#inv .top{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+#inv .meta td{padding:1px 10px 1px 0}#inv .meta td:first-child{color:#5f6368}
+#inv .parties{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}
+#inv .lab{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:#5f6368;margin-bottom:2px}
+#inv table.items{width:100%;border-collapse:collapse;margin:8px 0}
+#inv table.items th{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#5f6368;text-align:left;border-bottom:2px solid #1d1d1f;padding:6px 4px}
+#inv table.items td{border-bottom:1px solid #e3e3e0;padding:7px 4px;vertical-align:top}
+#inv .num{text-align:right;white-space:nowrap}
+#inv .tot{margin-left:auto;width:min(100%,300px)}#inv .tot td{padding:3px 4px}#inv .tot tr.grand td{border-top:2px solid #1d1d1f;font-weight:700;font-size:1.05rem;padding-top:6px}
+#inv .pre{white-space:pre-wrap}
+#inv{overflow-x:auto;overflow-wrap:anywhere}@media (max-width:500px){#inv{padding:16px}#inv .num{white-space:normal}}
+@media print{body{background:#fff}main>header,.form,.noprint{display:none!important}.cols{display:block}#inv{border:0;padding:0;position:static}main{padding:0;max-width:none}}
+</style></head><body><main>
+<header><h1>Freelance Invoice Maker</h1>
+<p class="lead">Fill in the form and a clean invoice builds itself on the right. It checks for the details that most often delay payment, works out the due date and totals, and prints or saves as a PDF. Nothing leaves your device.</p></header>
+<div class="cols">
+<div class="form">
+<section class="card"><h2>Invoice</h2><div class="grid">
+<div><label for="num">Invoice number</label><input id="num" value="2026-001"></div>
+<div><label for="issued">Issue date</label><input id="issued" type="date"></div>
+<div><label for="terms">Payment terms</label><select id="terms"><option value="0">Due on receipt</option><option value="7">7 days</option><option value="14" selected>14 days</option><option value="30">30 days</option><option value="45">45 days</option><option value="60">60 days</option></select></div>
+<div><label for="cur">Currency</label><input id="cur" value="USD" maxlength="5"></div>
+<div><label for="po">Client PO / reference</label><input id="po" placeholder="e.g. PO 44817"></div>
+<div><label for="period">Service period (optional)</label><input id="period" placeholder="e.g. 1-30 Nov 2026"></div>
+</div></section>
+<section class="card"><h2>From and to</h2><div class="grid">
+<div><label for="from">Your name / business, address, email</label><textarea id="from" placeholder="Your Name Studio&#10;12 Example Street, Springfield&#10;you@yourmail"></textarea></div>
+<div><label for="to">Client legal name, address, contact</label><textarea id="to" placeholder="Client Company Ltd&#10;Accounts Payable&#10;Attn: Contact Name"></textarea></div>
+<div><label for="taxid">Your tax / VAT number (if registered)</label><input id="taxid"></div>
+</div></section>
+<section class="card"><h2>Line items</h2>
+<div class="li hdr"><span>Description</span><span>Qty</span><span>Rate</span><span></span></div>
+<div id="lines"></div>
+<div class="row"><button id="add">+ Add line</button></div>
+<p class="small">Describe each line so someone in finance understands it without your email thread, e.g. "Homepage design, 2 revision rounds (proposal 3 Oct)".</p>
+</section>
+<section class="card"><h2>Adjustments</h2><div class="grid">
+<div><label for="disc">Discount (amount)</label><input id="disc" type="number" min="0" step="0.01" value="0"></div>
+<div><label for="taxr">Tax rate %</label><input id="taxr" type="number" min="0" step="0.01" value="0"></div>
+<div><label for="taxn">Tax label</label><input id="taxn" value="Tax"></div>
+<div><label for="dep">Deposit / already paid</label><input id="dep" type="number" min="0" step="0.01" value="0"></div>
+</div><p class="small">Tax is applied after the discount. Whether and how you charge tax depends on where you and your client are; check locally.</p></section>
+<section class="card"><h2>Payment and terms</h2><div class="grid">
+<div><label for="pay">How to pay you</label><textarea id="pay" placeholder="Bank transfer to: Your Name&#10;Account / sort code / IBAN&#10;Please quote the invoice number"></textarea></div>
+<div><label for="notes">Terms and notes</label><textarea id="notes" placeholder="As agreed in our contract, ..."></textarea></div>
+</div></section>
+<section class="card"><h2>Before you send</h2><ul class="checks" id="checks"></ul>
+<div class="row"><button class="pri" id="print">Print / save as PDF</button><button id="copy">Copy email text</button><button id="next">Start next invoice</button><button id="clear">Clear everything</button></div>
+<p class="small" id="msg">Your details are remembered in this browser only, so the next invoice starts pre-filled.</p></section>
+</div>
+<div id="inv" aria-live="polite"></div>
+</div>
+</main>
+<script>
+var F=['num','issued','terms','cur','po','period','from','to','taxid','disc','taxr','taxn','dep','pay','notes'];
+var KEY='pixelco-invoice-maker';
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function n(v){v=parseFloat(v);return isFinite(v)?v:0}
+function money(v){var c=($('cur').value||'').trim();var s=Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});return (v<0?'-':'')+s+(c?' '+esc(c):'')}
+function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function parseDate(s){var p=(s||'').split('-');if(p.length!==3)return null;var d=new Date(+p[0],+p[1]-1,+p[2]);return isNaN(d)?null:d}
+function fmtDate(d){return d?d.toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'}):''}
+function addLine(d,q,r){var w=document.createElement('div');w.className='li';
+w.innerHTML='<input class="d" placeholder="What you delivered" aria-label="Description"><input class="q" type="number" step="any" min="0" aria-label="Quantity"><input class="r" type="number" step="0.01" aria-label="Rate"><button class="x" aria-label="Remove line">&times;</button>';
+w.querySelector('.d').value=d||'';w.querySelector('.q').value=q==null?1:q;w.querySelector('.r').value=r==null?'':r;
+w.querySelector('.x').addEventListener('click',function(){w.remove();render()});
+w.addEventListener('input',render);$('lines').appendChild(w)}
+function lines(){return Array.prototype.map.call(document.querySelectorAll('#lines .li'),function(w){return{d:w.querySelector('.d').value,q:w.querySelector('.q').value,r:w.querySelector('.r').value}})}
+function save(){try{var o={};F.forEach(function(k){o[k]=$(k).value});o.lines=lines();localStorage.setItem(KEY,JSON.stringify(o))}catch(e){}}
+function load(){try{var o=JSON.parse(localStorage.getItem(KEY)||'null');if(!o)return false;F.forEach(function(k){if(o[k]!=null)$(k).value=o[k]});(o.lines||[]).forEach(function(l){addLine(l.d,l.q,l.r)});return true}catch(e){return false}}
+function render(){
+var L=lines().filter(function(l){return l.d.trim()||n(l.r)});
+var sub=L.reduce(function(a,l){return a+n(l.q)*n(l.r)},0);
+var disc=n($('disc').value),tr=n($('taxr').value),dep=n($('dep').value);
+var taxable=Math.max(0,sub-disc),tax=Math.round(taxable*tr)/100,total=taxable+tax-dep;
+var iss=parseDate($('issued').value),days=+$('terms').value,due=iss?new Date(iss.getFullYear(),iss.getMonth(),iss.getDate()+days):null;
+var rows=L.map(function(l){return '<tr><td>'+esc(l.d)+'</td><td class="num">'+esc(l.q)+'</td><td class="num">'+money(n(l.r))+'</td><td class="num">'+money(n(l.q)*n(l.r))+'</td></tr>'}).join('')||'<tr><td colspan="4" style="color:#5f6368">Add a line item</td></tr>';
+var t='<tr><td>Subtotal</td><td class="num">'+money(sub)+'</td></tr>';
+if(disc)t+='<tr><td>Discount</td><td class="num">'+money(-disc)+'</td></tr>';
+if(tr)t+='<tr><td>'+esc($('taxn').value||'Tax')+' ('+tr+'%)</td><td class="num">'+money(tax)+'</td></tr>';
+if(dep)t+='<tr><td>Less amount already paid</td><td class="num">'+money(-dep)+'</td></tr>';
+t+='<tr class="grand"><td>Total due</td><td class="num">'+money(total)+'</td></tr>';
+var meta='<tr><td>Invoice no.</td><td>'+esc($('num').value)+'</td></tr><tr><td>Issued</td><td>'+fmtDate(iss)+'</td></tr><tr><td>Due</td><td><b>'+(due?fmtDate(due):'')+'</b></td></tr>';
+if($('po').value.trim())meta+='<tr><td>Your ref.</td><td>'+esc($('po').value)+'</td></tr>';
+if($('period').value.trim())meta+='<tr><td>Period</td><td>'+esc($('period').value)+'</td></tr>';
+var h='<div class="top"><div><h3>INVOICE</h3></div><table class="meta">'+meta+'</table></div>'+
+'<div class="parties"><div><div class="lab">From</div><div class="pre">'+esc($('from').value)+'</div>'+($('taxid').value.trim()?'<div>Tax no. '+esc($('taxid').value)+'</div>':'')+'</div><div><div class="lab">Bill to</div><div class="pre">'+esc($('to').value)+'</div></div></div>'+
+'<table class="items"><thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+'<table class="tot">'+t+'</table>';
+if($('pay').value.trim())h+='<div style="margin-top:18px"><div class="lab">How to pay</div><div class="pre">'+esc($('pay').value)+'</div></div>';
+var nt=$('notes').value.trim(),dueTxt=due?('Payment due by '+fmtDate(due)+'.'):'';
+if(nt||dueTxt)h+='<div style="margin-top:14px"><div class="lab">Terms</div><div class="pre">'+esc([dueTxt,nt].filter(Boolean).join(' '))+'</div></div>';
+$('inv').innerHTML=h;
+var c=[[$('num').value.trim(),'Unique invoice number'],[!!iss,'Issue date and a real due date'],[$('from').value.trim(),'Your name and contact details'],[$('to').value.trim().split('\n').length>=2,'Client legal name plus address or accounts contact'],[$('po').value.trim(),'Client PO or reference (if they use one, finance may not pay without it)'],[L.length&&L.every(function(l){return l.d.trim().length>=12}),'Line items clear enough for someone in finance'],[($('cur').value||'').trim(),'Currency shown'],[$('pay').value.trim(),'Payment details on the invoice itself'],[total>0,'A positive total due']];
+$('checks').innerHTML=c.map(function(x){return '<li class="'+(x[0]?'ok':'bad')+'">'+(x[0]?'&#10003; ':'&#9675; ')+x[1]+'</li>'}).join('');
+render.total=total;render.due=due;save()}
+F.forEach(function(k){$(k).addEventListener('input',render);$(k).addEventListener('change',render)});
+$('add').addEventListener('click',function(){addLine();render()});
+$('print').addEventListener('click',function(){window.print()});
+$('copy').addEventListener('click',function(){var txt='Hi,\n\nPlease find attached invoice '+$('num').value+' for '+money(render.total).replace(/&amp;/g,'&')+', due '+fmtDate(render.due)+(($('po').value.trim())?' (ref. '+$('po').value.trim()+')':'')+'. Payment details are on the invoice.\n\nCould you let me know it has reached the right person?\n\nThanks,';
+var done=function(){$('msg').textContent='Email text copied. Paste it into your email and attach the PDF.'};
+try{navigator.clipboard.writeText(txt).then(done,function(){$('msg').textContent=txt})}catch(e){$('msg').textContent=txt}});
+$('next').addEventListener('click',function(){var v=$('num').value,m=v.match(/^(.*?)(\d+)$/);if(m){$('num').value=m[1]+String(+m[2]+1).padStart(m[2].length,'0')}
+$('issued').value=today();$('po').value='';$('period').value='';$('disc').value=0;$('dep').value=0;$('lines').innerHTML='';addLine();render();$('msg').textContent='New invoice started. Your details, payment info and terms were kept.'});
+$('clear').addEventListener('click',function(){try{localStorage.removeItem(KEY)}catch(e){}F.forEach(function(k){var el=$(k);el.value=el.defaultValue||''});$('terms').value='14';$('cur').value='USD';$('taxn').value='Tax';$('num').value='2026-001';$('issued').value=today();$('lines').innerHTML='';addLine();render();$('msg').textContent='Cleared.'});
+if(!load()){$('issued').value=today();addLine('',1,'')}
+render();
+</script><p style="text-align:center;margin:2em 0;font:14px system-ui"><a href="../../">More free tools from PixelCo</a></p></body></html>

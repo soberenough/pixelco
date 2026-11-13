@@ -4,13 +4,18 @@ each run so search engines and feed readers find new work. Organic only.
 import html as H
 from pathlib import Path
 
-from .lanes import SITE, page
+import json
+import os
+
+from .lanes import SITE, page, ADS, ads_head, SITEINFO
 from . import storefront
 
 
 def publish(ledger, cfg):
     items = ledger.state["items"]
     base = cfg.get("site_url", "").rstrip("/")
+    ADS["client"] = ((cfg.get("ads") or {}).get("adsense_client") or "").strip()
+    SITEINFO["base"] = base
 
     def section(lane, anchor, label, blurb):
         rows = [i for i in items if i["lane"] == lane][::-1]
@@ -30,7 +35,8 @@ def publish(ledger, cfg):
                 out = SITE / i["url"] / "index.html"
                 out.parent.mkdir(parents=True, exist_ok=True)
                 out.write_text(page(i["title"], i.get("description") or "",
-                                    storefront.product_body(i, items, SITE), depth=2))
+                                    storefront.product_body(i, items, SITE) + product_jsonld(i, base),
+                                    depth=2, path=i["url"]))
             except Exception as e:  # one bad item must not lose the whole run
                 ledger.alert(f"couldn't rebuild page for {i.get('id')}: {e}")
 
@@ -45,7 +51,7 @@ def publish(ledger, cfg):
     (SITE / "index.html").write_text(page(
         "Business kits for freelancers",
         "Ready-made templates, scripts and spreadsheets for freelancers: proposals, getting paid, "
-        "change requests and planning. Plus free calculators and guides.", body))
+        "change requests and planning. Plus free calculators and guides.", body, path=""))
 
     for slug, title, text in policy_pages(cfg):
         out = SITE / slug / "index.html"
@@ -65,7 +71,46 @@ def publish(ledger, cfg):
         '<?xml version="1.0"?><rss version="2.0"><channel><title>PixelCo</title>'
         f"<link>{base}/</link><description>New from PixelCo</description>{feed}</channel></rss>")
     (SITE / ".nojekyll").write_text("")
+    if ads_head():  # ads.txt authorises Google to sell ads on this site
+        pub = ADS["client"].replace("ca-", "", 1)
+        (SITE / "ads.txt").write_text(f"google.com, {pub}, DIRECT, f08c47fec0942fa0\n")
+    elif (SITE / "ads.txt").exists():
+        (SITE / "ads.txt").unlink()
     ledger.event("marketer", f"storefront, policies, sitemap and feed updated ({len(items)} items)")
+    indexnow(ledger, cfg, base, urls)
+
+
+def product_jsonld(i, base):
+    """schema.org Product data so search engines can show the price in results."""
+    if not i.get("price") or not base:
+        return ""
+    data = {"@context": "https://schema.org", "@type": "Product", "name": i["title"],
+            "description": i.get("description") or "", "url": f"{base}/{i['url']}",
+            "brand": {"@type": "Brand", "name": "PixelCo"},
+            "offers": {"@type": "Offer", "price": f"{float(i['price']):.2f}", "priceCurrency": "USD",
+                       "availability": "https://schema.org/InStock", "url": f"{base}/{i['url']}"}}
+    js = json.dumps(data).replace("<", "\\u003c")
+    return f'<script type="application/ld+json">{js}</script>'
+
+
+def indexnow(ledger, cfg, base, urls):
+    """Tell Bing, Yandex and other IndexNow search engines about our pages (no account needed).
+    The key is public by design: it only proves we control this site."""
+    key = ((cfg.get("seo") or {}).get("indexnow_key") or "").strip()
+    if not key or not base or not key.isalnum() or not (8 <= len(key) <= 128):
+        return
+    (SITE / f"{key}.txt").write_text(key)
+    if os.environ.get("PIXELCO_NO_PING"):
+        return
+    try:
+        import requests
+        from urllib.parse import urlparse
+        u = urlparse(base)
+        r = requests.post("https://api.indexnow.org/indexnow", timeout=20, json={
+            "host": u.netloc, "key": key, "keyLocation": f"{base}/{key}.txt", "urlList": urls[:10000]})
+        ledger.event("marketer", f"IndexNow: submitted {len(urls)} pages to search engines (HTTP {r.status_code})")
+    except Exception as e:  # never fail the business day over a search-engine ping
+        ledger.event("marketer", f"IndexNow ping skipped: {e}")
 
 
 def policy_pages(cfg):
@@ -92,9 +137,16 @@ def policy_pages(cfg):
          "automated checks. They are general information, not professional legal, financial "
          "or medical advice.</p>"),
         ("privacy", "Privacy",
-         "<p>This site has no accounts, no cookies, no analytics and no tracking scripts. "
-         "Our free tools run entirely in your browser and send nothing anywhere.</p>"
-         "<p>When you buy, payment details go directly to Stripe. PixelCo never sees your card "
+         (("<p>This site shows ads from Google AdSense. Google and its partners may use cookies "
+           "to show ads based on your visits to this and other sites. You can turn off "
+           "personalized ads at <a href=\"https://adssettings.google.com\">Google Ads Settings</a>. "
+           "See <a href=\"https://policies.google.com/technologies/ads\">how Google uses data "
+           "from sites that show its ads</a>.</p><p>PixelCo itself has no accounts and no analytics. "
+           "Our free tools run entirely in your browser and send nothing anywhere.</p>")
+          if ads_head() else
+          "<p>This site has no accounts, no cookies, no analytics and no tracking scripts. "
+          "Our free tools run entirely in your browser and send nothing anywhere.</p>")
+         + "<p>When you buy, payment details go directly to Stripe. PixelCo never sees your card "
          "details and does not store your name or email. See Stripe's privacy policy for how "
          "they handle your data.</p>"),
     ]

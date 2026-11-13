@@ -52,6 +52,8 @@ def inbox_from_dir(d):
 
 
 def business_day(cfg, inbox):
+    from .lanes import ADS
+    ADS["client"] = ((cfg.get("ads") or {}).get("adsense_client") or "").strip()
     led = Ledger()
     led.state["cycle"] += 1
     led.event("ceo", f"--- day {led.state['cycle']} --- cash ${led.cash:.2f}")

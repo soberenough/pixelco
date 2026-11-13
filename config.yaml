@@ -16,3 +16,9 @@ strategy:
   kill_after: 12           # items with no sales before a lane is shut down
   max_items_per_day: 8
   explore: 0.15            # share of daily slots that test every live lane
+
+ads:
+  # Google AdSense publisher id, e.g. "ca-pub-1234567890123456" (public, not a secret).
+  # Empty = no ads. When set, every page loads AdSense Auto ads, ads.txt is published
+  # and the Privacy page explains Google's ad cookies.
+  adsense_client: ""

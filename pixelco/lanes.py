@@ -153,6 +153,8 @@ STYLE += STYLE_EXTRA
 # Display ads (Google AdSense Auto ads). Off unless config.yaml sets ads.adsense_client
 # to a "ca-pub-..." id; set at the start of each run by run.py / publisher.py.
 ADS = {"client": ""}
+# Absolute site address (config site_url), used for canonical and social-share tags.
+SITEINFO = {"base": ""}
 
 
 def ads_head():
@@ -164,14 +166,26 @@ def ads_head():
             'crossorigin="anonymous"></script>')
 
 
-def page(title, description, body, depth=0, index=True):
+def seo_head(title, description, path):
+    base = (SITEINFO.get("base") or "").rstrip("/")
+    if not base or path is None:
+        return ""
+    url = f"{base}/{path}"
+    t, d = H.escape(title + " · PixelCo"), H.escape(description or "")
+    return (f'<link rel="canonical" href="{url}">'
+            f'<meta property="og:type" content="website"><meta property="og:site_name" content="PixelCo">'
+            f'<meta property="og:title" content="{t}"><meta property="og:description" content="{d}">'
+            f'<meta property="og:url" content="{url}"><meta name="twitter:card" content="summary">')
+
+
+def page(title, description, body, depth=0, index=True, path=None):
     up = "../" * depth
     robots = "" if index else '<meta name="robots" content="noindex">'
     return (
         "<!doctype html><html lang=en><head><meta charset=utf-8>"
         "<meta name=viewport content='width=device-width,initial-scale=1'>"
         f"<title>{H.escape(title)} · PixelCo</title>"
-        f'<meta name="description" content="{H.escape(description)}">{robots}'
+        f'<meta name="description" content="{H.escape(description)}">{robots}{seo_head(title, description, path)}'
         f"<style>{STYLE}</style>{ads_head()}</head><body><div class=wrap>"
         f'<nav><b><a href="{up}./">PixelCo</a></b><a href="{up}./#shop">Shop</a>'
         f'<a href="{up}./#tools">Free tools</a><a href="{up}./#guides">Guides</a></nav>'

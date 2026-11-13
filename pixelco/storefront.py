@@ -9,6 +9,11 @@ import json
 import re
 from pathlib import Path
 
+
+def _ads_on():
+    from .lanes import ads_head  # late import: lanes imports this module
+    return bool(ads_head())
+
 COPY_FILE = Path("copy") / "products.json"
 
 # Shelves, in display order. First matching shelf wins; keywords match the title.
@@ -124,7 +129,9 @@ def index_body(items, site):
            '<p class=cta><a class=btn href="#shop">Browse the kits</a> '
            '<a class=btn2 href="#tools">Try a free tool</a></p>'
            '<ul class=trust><li>Instant download</li><li>Works in Excel, Google Sheets, Word or Notion</li>'
-           '<li>Full refund if a file is broken or not as described</li><li>No accounts, no tracking</li></ul></section>']
+           '<li>Full refund within 14 days if a file is broken or not as described</li>'
+           + ('<li>No accounts needed</li>' if _ads_on() else '<li>No accounts, no tracking</li>')
+           + '</ul></section>']
 
     if bundle:
         n = len(bundle.get("includes") or [])

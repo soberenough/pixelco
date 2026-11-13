@@ -22,3 +22,8 @@ ads:
   # Empty = no ads. When set, every page loads AdSense Auto ads, ads.txt is published
   # and the Privacy page explains Google's ad cookies.
   adsense_client: ""
+
+seo:
+  # IndexNow key (public by design): lets Bing, Yandex and other search engines be told
+  # about new pages each business day without any account. Delete to stop pinging.
+  indexnow_key: "5f356fec96c7ce72837e8e88e9aee526"

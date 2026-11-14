@@ -36,12 +36,13 @@ SHELVES = [
 OTHER = ("more", "More from the shop", "Other planners and kits.")
 
 FILE_HINTS = [  # (pattern in file name, friendly label)
-    (r"readme|start-here", "Start-here guide: what's in the kit and how to use it"),
-    (r"\.csv$", "Spreadsheet template (opens in Excel, Google Sheets or Numbers)"),
+    (r"readme|start.here", "Start-here guide: what's in the kit and how to use it"),
+    (r"\.(csv|xlsx)$", "Spreadsheet template (opens in Excel, Google Sheets or Numbers)"),
     (r"email|reminder|script|message", "Ready-to-send wording you can copy and adapt"),
     (r"checklist", "Step-by-step checklist"),
     (r"terms|contract|clause|agreement|policy", "Clause wording to adapt (general information, not legal advice)"),
-    (r"\.md$|\.txt$", "Guide or template you can copy into any doc app"),
+    (r"\.(md|docx|pdf)$", "Document in Word and PDF (opens in Word, Google Docs or Pages; PDF on any device)"),
+    (r"\.txt$", "Plain text file"),
 ]
 
 
@@ -101,7 +102,7 @@ def card(item, copy, depth=0):
     c = copy.get(slug_of(item), {})
     title = H.escape(item["title"])
     tagline = H.escape(c.get("tagline") or short(item.get("description", "")))
-    n = len(item.get("files") or [])
+    n = len(display_files(item.get("files") or [], {}))
     price = f'${float(item["price"]):.0f}' if item.get("price") else ""
     meta = " · ".join(x for x in (f"{n} ready-to-use files" if n else "", price) if x)
     return (f'<a class=card href="{"../" * depth}{item["url"]}">'
@@ -178,6 +179,34 @@ def related_tools(item, items, site):
     return hits[:3]
 
 
+def display_files(files, notes):
+    """Buyer-facing list: one line per document ("Name (Word + PDF)"), spreadsheets as Excel.
+    Works for old kits (.md/.csv names) and converted ones. Returns [(label, description)]."""
+    from pathlib import PurePosixPath
+    from .packaging import friendly
+    by_title = {friendly(PurePosixPath(k).stem): v for k, v in notes.items()}
+    seen, out = set(), []
+    for f in files:
+        p = PurePosixPath(f)
+        if p.name == "LICENSE.txt":
+            continue
+        ext = p.suffix.lower()
+        title = p.stem if " " in p.stem or p.stem == "START HERE" else friendly(p.stem)
+        if ext in (".md", ".docx", ".pdf"):
+            label = "START HERE (Word + PDF)" if title == "START HERE" else f"{title} (Word + PDF)"
+        elif ext in (".csv", ".xlsx"):
+            label = f"{title} (Excel spreadsheet)"
+        else:
+            label = p.name
+        if label in seen:
+            continue
+        seen.add(label)
+        note = notes.get(f) or by_title.get(title) or file_label(f if ext not in (".docx", ".pdf") else title + ext, {})
+        out.append((label, note))
+    out.sort(key=lambda x: (not x[0].startswith("START HERE"), x[0]))
+    return out
+
+
 def product_body(item, items, site):
     copy = load_copy().get(slug_of(item), {})
     price = float(item.get("price") or 0)
@@ -200,8 +229,10 @@ def product_body(item, items, site):
     if copy.get("tagline") and desc:
         parts.append(f"<h2>About this kit</h2><p>{H.escape(desc)}</p>")
     parts.append("<h2>What's inside</h2><ul class=files>"
-                 + "".join(f"<li><b>{H.escape(f)}</b><span>{H.escape(file_label(f, notes))}</span></li>" for f in files)
-                 + "<li><b>LICENSE.txt</b><span>Use for your own personal and business work</span></li></ul>")
+                 + "".join(f"<li><b>{H.escape(lbl)}</b><span>{H.escape(note)}</span></li>" for lbl, note in display_files(files, notes))
+                 + "<li><b>LICENSE.txt</b><span>Use for your own personal and business work</span></li></ul>"
+                 "<p class=small>Everything opens with software you already have: Word, Google Docs or Pages for "
+                 "documents (plus a PDF of each), and Excel, Google Sheets or Numbers for spreadsheets.</p>")
     tools = related_tools(item, items, site)
     if tools:
         parts.append("<h2>Free tools that pair with this kit</h2><ul>"

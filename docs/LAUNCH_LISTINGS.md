@@ -23,7 +23,7 @@ Bundle: all five for $29 (save $14) once single listings are up.
 
 ## Gumroad (fastest: free to list, handles payment itself, no Stripe key needed)
 
-For each kit: Product type "Digital product", upload the kit ZIP from the vault, price as above, "Pay what you want" OFF.
+For each kit: Product type "Digital product", upload the kit ZIP from the vault (it contains Word, PDF and Excel files plus START HERE), price as above, "Pay what you want" OFF.
 
 ### Freelance Proposal Kit, $9
 **Name:** Freelance Proposal Kit: Template, 3-Option Pricing & Follow-Up Emails
@@ -37,18 +37,18 @@ What's inside:
 - A five-minute pre-send checklist
 - A proposal tracker spreadsheet (CSV) to see what wins, at what price, and why
 
-Works in any text editor, Google Docs, Word, Excel, Google Sheets or Numbers. Instant download. Written with AI assistance and checked against a quality checklist. General business templates, not legal advice.
+Documents come as Word and PDF, the tracker as an Excel spreadsheet: they open in Word, Google Docs, Pages, Excel, Google Sheets or Numbers, with no extra software needed. Instant download. Written with AI assistance and checked against a quality checklist. General business templates, not legal advice.
 
 ### Freelancer Get-Paid Kit, $7
 **Name:** Freelancer Get-Paid Kit: Invoice Tracker + 4 Payment Reminder Emails
 **Description:**
 Get paid on time without awkward chasing.
-- Invoice tracker spreadsheet (Excel, Google Sheets, Numbers)
+- Invoice tracker spreadsheet (opens in Excel, Google Sheets or Numbers)
 - Pre-send invoice checklist
 - Four payment reminder emails, from friendly to final
 - Contract payment terms you can copy into your agreements
 
-Instant download. AI-assisted, human-readable, no software needed. Not legal advice.
+Word, PDF and Excel files; nothing extra to install. Word, PDF and Excel files; nothing extra to install. Instant download. AI-assisted. Not legal advice.
 
 ### Freelance Client Onboarding Kit, $9
 **Name:** Freelance Client Onboarding Kit: Intake Form, Scope of Work, Kickoff Agenda
@@ -61,7 +61,7 @@ Start every client project clearly.
 - Step-by-step onboarding checklist
 - Change request log to stop scope creep before it starts
 
-Instant download. AI-assisted. Not legal advice.
+Word, PDF and Excel files; nothing extra to install. Instant download. AI-assisted. Not legal advice.
 
 ### Freelance Rate Increase Kit, $9
 **Name:** Freelance Rate Increase Kit: Raise Your Rates Without Awkward Negotiations
@@ -73,7 +73,7 @@ Instant download. AI-assisted. Not legal advice.
 - Scripts for eight common client replies
 - Wording that makes future increases routine
 
-Instant download. AI-assisted. Not legal advice.
+Word, PDF and Excel files; nothing extra to install. Instant download. AI-assisted. Not legal advice.
 
 ### Freelance Change Request Kit, $9
 **Name:** Freelance Change Request Kit: Stop Scope Creep Without Arguing
@@ -87,7 +87,7 @@ Stop doing extra work for free.
 - Ten ready-to-send emails
 - Change log and revision tracker
 
-For designers, developers, writers and other project freelancers. Instant download. AI-assisted. Not legal advice.
+For designers, developers, writers and other project freelancers. Word, PDF and Excel files; nothing extra to install. Instant download. AI-assisted. Not legal advice.
 
 ---
 

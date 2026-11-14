@@ -11,6 +11,7 @@ import secrets
 import zipfile
 from pathlib import Path
 
+from . import packaging
 from .guard import lock_tool
 
 SITE = Path("site")
@@ -46,24 +47,22 @@ def build_product(spec, ledger, cfg, stripe):
     token = secrets.token_urlsafe(18)
     dl = SITE / "dl" / token
     dl.mkdir(parents=True, exist_ok=True)
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
-        for name, body in spec["files"].items():
-            z.writestr(name, body)
-        z.writestr("LICENSE.txt",
-                   "You may use these files for personal and business work.\n"
-                   "Please don't resell or share them as-is.\n")
-    (dl / f"{slug}.zip").write_bytes(buf.getvalue())
+    # Buyers get Word, PDF and Excel files (see packaging.py), never raw .md/.csv.
+    zip_bytes, file_names = packaging.build_zip(spec["files"])
+    (dl / f"{slug}.zip").write_bytes(zip_bytes)
     (dl / "index.html").write_text(page(
         "Thank you", "Your download",
         f"<h1>Thanks for your order</h1><p>Your download is ready: "
         f'<a class=btn href="{slug}.zip">Download {H.escape(spec["title"])}</a></p>'
+        "<p>Open the ZIP file (double-click on a computer; tap it on a phone) and start with "
+        "<b>START HERE</b>. Documents come as Word and PDF, spreadsheets as Excel: they open in "
+        "Word, Google Docs, Pages, Excel, Google Sheets or Numbers, with no extra software needed.</p>"
         "<p>Bookmark this page in case you need the file again. Problems? "
         'See the <a href="../../contact/">contact page</a>.</p>', depth=2, index=False))
 
     item = {"id": f"product-{slug}", "lane": "products", "title": spec["title"],
             "price": price, "description": spec["description"], "url": f"shop/{slug}/",
-            "dl": token, "files": list(spec["files"])}
+            "dl": token, "files": file_names}
     attach_checkout(item, cfg, stripe)
     return item
 

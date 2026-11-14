@@ -115,6 +115,20 @@ def business_day(cfg, inbox):
             except Exception as e:  # one bad item must not lose the whole run
                 led.alert(f"checkout setup failed for {item.get('id')}: {e}")
 
+    # Buyers must never need special software: re-package any kit still shipping .md/.csv
+    # files as Word + PDF + Excel, in place (same download link).
+    try:
+        from . import packaging
+        if packaging.tools_available():
+            n = packaging.upgrade_published(led.state["items"], "site")
+            if n:
+                led.event("packer", f"re-packaged {n} kits as Word, PDF and Excel files")
+        else:
+            led.alert("Kit packaging tools (pandoc/LibreOffice) missing: kits still ship .md/.csv files")
+    except Exception as e:  # never lose the business day over packaging
+        led.alert(f"kit re-packaging failed: {e}")
+        traceback.print_exc()
+
     led.agent("marketer", "working", "publishing")
     publish(led, cfg)
     led.agent("marketer", "idle", "")

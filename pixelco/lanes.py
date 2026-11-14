@@ -5,6 +5,7 @@ tools     - offline single-file web tools; earn through tips and cross-sells
 products  - downloadable kits sold through Stripe checkout links
 """
 import html as H
+import os
 import re
 import io
 import secrets
@@ -49,6 +50,14 @@ def build_product(spec, ledger, cfg, stripe):
     dl.mkdir(parents=True, exist_ok=True)
     # Buyers get Word, PDF and Excel files (see packaging.py), never raw .md/.csv.
     zip_bytes, file_names = packaging.build_zip(spec["files"])
+    src_dir = os.environ.get("PIXELCO_SRC")
+    if src_dir:  # keep the originals privately so packaging fixes can be re-applied later
+        Path(src_dir).mkdir(parents=True, exist_ok=True)
+        sb = io.BytesIO()
+        with zipfile.ZipFile(sb, "w", zipfile.ZIP_DEFLATED) as sz:
+            for name, body in spec["files"].items():
+                sz.writestr(name, body)
+        (Path(src_dir) / f"{slug}.zip").write_bytes(sb.getvalue())
     (dl / f"{slug}.zip").write_bytes(zip_bytes)
     (dl / "index.html").write_text(page(
         "Thank you", "Your download",

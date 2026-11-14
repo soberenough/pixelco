@@ -35,12 +35,16 @@ jobs:
           repository: soberenough/pixelco-vault
           token: ${{ secrets.VAULT_TOKEN }}
           path: vault
+          fetch-depth: 0   # full history: original kit sources are recovered from it once
       - run: mkdir -p site/dl vault/dl && cp -r vault/dl/. site/dl/
+      - name: Keep original kit sources in the vault (for re-packaging fixes)
+        run: python -m pixelco.sources vault
 
       - name: Run one business day
         env:
           STRIPE_KEY: ${{ secrets.STRIPE_KEY }}
           PIXELCO_STATE: vault/state.json
+          PIXELCO_SRC: vault/src
         run: python -m pixelco.run
 
       # The vault is saved first: if a later step fails, the books still match
@@ -55,7 +59,7 @@ jobs:
           cp -r ../site/dl/. dl/
           git config user.name "pixelco-bot"
           git config user.email "pixelco-bot@users.noreply.github.com"
-          git add state.json dl
+          git add state.json dl; [ -d src ] && git add src || true
           git commit -q -m "Business day $(jq .cycle state.json)" || echo "no vault changes"
           git push
       - name: Save public pages

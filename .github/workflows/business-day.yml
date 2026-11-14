@@ -24,7 +24,10 @@ jobs:
         with: { fetch-depth: 1 }
       - uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55   # v5.5.0
         with: { python-version: "3.12" }
-      - run: pip install requests==2.32.3 PyYAML==6.0.2
+      - run: pip install requests==2.32.3 PyYAML==6.0.2 openpyxl==3.1.5
+      # Kits ship as Word, PDF and Excel files so buyers need no special software (pixelco/packaging.py).
+      - name: Install document converters
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends pandoc libreoffice-writer fonts-dejavu-core
 
       - name: Open the vault (private state + paid downloads)
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1

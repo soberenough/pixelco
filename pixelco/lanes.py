@@ -59,21 +59,26 @@ def build_product(spec, ledger, cfg, stripe):
                 sz.writestr(name, body)
         (Path(src_dir) / f"{slug}.zip").write_bytes(sb.getvalue())
     (dl / f"{slug}.zip").write_bytes(zip_bytes)
-    (dl / "index.html").write_text(page(
-        "Thank you", "Your download",
-        f"<h1>Thanks for your order</h1><p>Your download is ready: "
-        f'<a class=btn href="{slug}.zip">Download {H.escape(spec["title"])}</a></p>'
-        "<p>Open the ZIP file (double-click on a computer; tap it on a phone) and start with "
-        "<b>START HERE</b>. Documents come as Word and PDF, spreadsheets as Excel: they open in "
-        "Word, Google Docs, Pages, Excel, Google Sheets or Numbers, with no extra software needed.</p>"
-        "<p>Bookmark this page in case you need the file again. Problems? "
-        'See the <a href="../../contact/">contact page</a>.</p>', depth=2, index=False))
+    write_download_page(dl, slug, spec["title"])
 
     item = {"id": f"product-{slug}", "lane": "products", "title": spec["title"],
             "price": price, "description": spec["description"], "url": f"shop/{slug}/",
             "dl": token, "files": file_names}
     attach_checkout(item, cfg, stripe)
     return item
+
+
+def write_download_page(dl, slug, title):
+    """The page a buyer lands on after paying: the download plus how to open the files."""
+    (Path(dl) / "index.html").write_text(page(
+        "Thank you", "Your download",
+        f"<h1>Thanks for your order</h1><p>Your download is ready: "
+        f'<a class=btn href="{slug}.zip">Download {H.escape(title)}</a></p>'
+        "<p>Open the ZIP file (double-click on a computer; tap it on a phone) and start with "
+        "<b>START HERE</b>. Documents come as Word and PDF, spreadsheets as Excel: they open in "
+        "Word, Google Docs, Pages, Excel, Google Sheets or Numbers, with no extra software needed.</p>"
+        "<p>Bookmark this page in case you need the file again. Problems? "
+        'See the <a href="../../contact/">contact page</a>.</p>', depth=2, index=False))
 
 
 def attach_checkout(item, cfg, stripe):

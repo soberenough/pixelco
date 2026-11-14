@@ -124,6 +124,13 @@ def business_day(cfg, inbox):
             n = packaging.upgrade_published(led.state["items"], "site", os.environ.get("PIXELCO_SRC"))
             if n:
                 led.event("packer", f"re-packaged {n} kits as Word, PDF and Excel files")
+            from .lanes import write_download_page
+            for it in led.state["items"]:  # keep every download page's "how to open" note current
+                d = Path("site") / "dl" / it.get("dl", "")
+                if it.get("lane") == "products" and it.get("dl") and d.is_dir():
+                    page_now = (d / "index.html").read_text() if (d / "index.html").exists() else ""
+                    if "START HERE" not in page_now:
+                        write_download_page(d, it["url"].strip("/").split("/")[-1], it["title"])
         else:
             led.alert("Kit packaging tools (pandoc/LibreOffice) missing: kits still ship .md/.csv files")
     except Exception as e:  # never lose the business day over packaging

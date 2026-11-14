@@ -4,6 +4,7 @@ content   - helpful guides on the site; earn by cross-selling the shop
 tools     - offline single-file web tools; earn through tips and cross-sells
 products  - downloadable kits sold through Stripe checkout links
 """
+from .checkout import buy_link
 import html as H
 import os
 import re
@@ -121,14 +122,15 @@ def reset_checkout(item):
 def write_product_page(item, files):
     price = float(item.get("price") or 0)
     desc = item.get("description") or ""
-    buy = (f'<p><a class=btn href="{H.escape(item["buy_url"])}">Buy for ${price:.2f}</a></p>'
-           if item.get("buy_url") else "<p><i>Checkout opens soon.</i></p>")
+    url, processor = buy_link(item)
+    buy = (f'<p><a class=btn href="{H.escape(url)}">Buy for ${price:.2f}</a></p>'
+           if url else "<p><i>Checkout opens soon.</i></p>")
     body = (f"<h1>{H.escape(item['title'])}</h1><p>{H.escape(desc)}</p>"
             f"<p class=price>${price:.2f}</p>{buy}"
             "<h2>What's inside</h2><ul>"
             + "".join(f"<li>{H.escape(n)}</li>" for n in files)
             + "<li>LICENSE.txt</li></ul>"
-            "<p class=small>Instant download after checkout. Payments are processed by Stripe. "
+            f"<p class=small>Instant download after checkout. Payments are processed by {processor or 'Stripe'}. "
             'See our <a href="../../refunds/">refund policy</a>.</p>')
     out = SITE / item["url"] / "index.html"
     out.parent.mkdir(parents=True, exist_ok=True)

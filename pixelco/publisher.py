@@ -120,17 +120,17 @@ def policy_pages(cfg):
     return [
         ("contact", "Contact",
          contact + "<p>For a problem with an order, include the product name and the email "
-         "you used at checkout. Stripe, our payment processor and reseller, can also help "
-         "with any payment question from the receipt they sent you.</p>"),
+         "you used at checkout. Our checkout provider (Gumroad, or Stripe for some kits) can also "
+         "help with any payment question from the receipt they sent you.</p>"),
         ("refunds", "Refund policy",
          "<p>If a download is broken, missing, or not as described, you can get a full "
-         "refund within 14 days of purchase. Contact us or reply to your Stripe receipt.</p>"
+         "refund within 14 days of purchase. Contact us or reply to your purchase receipt.</p>"
          "<p>Because downloads are delivered instantly, we don't otherwise offer refunds "
          "for change of mind.</p>"),
         ("terms", "Terms",
          "<p>PixelCo sells digital files: templates, checklists, planners and guides. "
-         "Checkout is handled by Stripe, which acts as the reseller and merchant of record "
-         "and handles payment, sales tax and receipts.</p>"
+         "Checkout is handled by Gumroad or Stripe, which act as the reseller and merchant of "
+         "record and handle payment, sales tax and receipts.</p>"
          "<p>After purchase you may use the files for your own personal and business work. "
          "Please don't resell or redistribute them as they are.</p>"
          "<p>Products, tools and guides are written with the help of AI and reviewed by "
@@ -146,7 +146,7 @@ def policy_pages(cfg):
           if ads_head() else
           "<p>This site has no accounts, no cookies, no analytics and no tracking scripts. "
           "Our free tools run entirely in your browser and send nothing anywhere.</p>")
-         + "<p>When you buy, payment details go directly to Stripe. PixelCo never sees your card "
-         "details and does not store your name or email. See Stripe's privacy policy for how "
+         + "<p>When you buy, payment details go directly to our checkout provider (Gumroad or "
+         "Stripe). PixelCo never sees your card details. See their privacy policies for how "
          "they handle your data.</p>"),
     ]

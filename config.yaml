@@ -27,3 +27,14 @@ seo:
   # IndexNow key (public by design): lets Bing, Yandex and other search engines be told
   # about new pages each business day without any account. Delete to stop pinging.
   indexnow_key: "5f356fec96c7ce72837e8e88e9aee526"
+
+gumroad:
+  # Kits listed on Gumroad (store: https://pixelcoshop.gumroad.com). Gumroad takes the
+  # payment and links buyers to the kit's secret download folder, so these Buy buttons
+  # work without a live Stripe key. A listed kit's download folder is never moved.
+  products:
+    freelance-proposal-kit: "https://pixelcoshop.gumroad.com/l/freelance-proposal-kit"
+    freelancer-get-paid-kit: "https://pixelcoshop.gumroad.com/l/freelancer-get-paid-kit"
+    freelance-client-onboarding-kit: "https://pixelcoshop.gumroad.com/l/freelance-client-onboarding-kit"
+    freelance-rate-increase-kit: "https://pixelcoshop.gumroad.com/l/freelance-rate-increase-kit"
+    freelance-change-request-kit: "https://pixelcoshop.gumroad.com/l/freelance-change-request-kit"

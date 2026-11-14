@@ -22,6 +22,16 @@ Shop: https://soberenough.github.io/pixelco
 | Accountant | Books net revenue from PixelCo's own checkouts only |
 | Marketer | Storefront, policy pages, sitemap and RSS feed |
 
+
+## Claude Code (ECC)
+
+This repository enables the official ECC plugin for Claude Code (`ecc@ecc`) from [affaan-m/ECC](https://github.com/affaan-m/ECC) only, via `.claude/settings.json`. After it is merged, Claude Code should use ECC's **code-reviewer** and **security-review** agents on pull requests.
+
+Install ECC only from that official GitHub repository, the official npm packages (`ecc-universal`, `ecc-agentshield`), or the plugin slug `ecc@ecc`. Third-party re-uploads and unofficial mirrors may contain malware.
+
+Owner approval is still required for merges, deployments, and any payment or Stripe changes. Do not merge, deploy, or change payment code without the owner's explicit OK.
+
+
 ## Safety design
 
 - **Keys:** live only in GitHub secrets. The AI session never holds one.

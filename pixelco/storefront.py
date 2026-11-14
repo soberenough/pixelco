@@ -4,6 +4,7 @@ free tools and guides as cards, and richer product pages.
 Pure presentation. Reads item data and the optional, human-reviewed copy file
 copy/products.json; never touches checkouts, prices or money.
 """
+from .checkout import buy_link
 import html as H
 import json
 import re
@@ -213,8 +214,9 @@ def product_body(item, items, site):
     desc = item.get("description") or ""
     files = list(item.get("files") or [])
     notes = copy.get("file_notes") or {}
-    buy = (f'<a class=btn href="{H.escape(item["buy_url"])}">Buy for ${price:.2f}</a>'
-           if item.get("buy_url") else "<i>Checkout opens soon.</i>")
+    url, processor = buy_link(item)
+    buy = (f'<a class=btn href="{H.escape(url)}">Buy for ${price:.2f}</a>'
+           if url else "<i>Checkout opens soon.</i>")
     shelf = next((s for s in SHELVES if s[0] == shelf_of(item)), None)
     crumb = (f'<p class=small><a href="../../#shop">Shop</a> › '
              f'<a href="../../#{shelf[0]}">{H.escape(shelf[1])}</a></p>' if shelf else "")
@@ -238,7 +240,7 @@ def product_body(item, items, site):
         parts.append("<h2>Free tools that pair with this kit</h2><ul>"
                      + "".join(f'<li><a href="../../{t["url"]}">{H.escape(t["title"])}</a></li>' for t in tools) + "</ul>")
     parts.append(f'<p class=buy>{buy}</p>'
-                 "<p class=small>Instant download after checkout. Payments are processed by Stripe. "
+                 f"<p class=small>Instant download after checkout. Payments are processed by {processor or 'Stripe'}. "
                  'Full refund within 14 days if a file is broken or not as described: see our '
                  '<a href="../../refunds/">refund policy</a>. General information, not legal, tax or '
                  "financial advice.</p>")

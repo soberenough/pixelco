@@ -11,6 +11,7 @@
   python -m pixelco.run                    # normal run (reads origin/inbox)
   python -m pixelco.run --inbox-dir DIR    # local testing from a folder
 """
+from .checkout import gumroad_url
 import argparse
 import json
 import os
@@ -104,6 +105,10 @@ def business_day(cfg, inbox):
 
     for item in led.state["items"]:
         if item["lane"] != "products":
+            continue
+        if gumroad_url(item, cfg):
+            # Sold on Gumroad: never reset its checkout or move its download folder,
+            # because the Gumroad listing links to that folder.
             continue
         if stripe.enabled and item.get("buy_url") and link_mode(item) != stripe.mode:
             problem = reset_checkout(item)

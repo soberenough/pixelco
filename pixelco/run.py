@@ -13,6 +13,7 @@
 """
 import argparse
 import json
+import os
 import subprocess
 import traceback
 from pathlib import Path
@@ -120,7 +121,7 @@ def business_day(cfg, inbox):
     try:
         from . import packaging
         if packaging.tools_available():
-            n = packaging.upgrade_published(led.state["items"], "site")
+            n = packaging.upgrade_published(led.state["items"], "site", os.environ.get("PIXELCO_SRC"))
             if n:
                 led.event("packer", f"re-packaged {n} kits as Word, PDF and Excel files")
         else:

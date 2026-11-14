@@ -44,14 +44,23 @@ def tools_available():
 
 
 def _rename_refs(text, names):
-    """Replace mentions of source file names with the new readable names."""
-    for old, new in sorted(names.items(), key=lambda kv: -len(kv[0])):
-        text = re.sub(rf"\*\*`?{re.escape(old)}`?\*\*|`{re.escape(old)}`|(?<![\w/.-]){re.escape(old)}(?![\w-])(?!\.\w)",
-                      f"**{new}**", text)
-    # Any other file name the buyer is told to create or look for: use the formats they actually have.
-    text = re.sub(r"\b([\w-]+)\.md\b(?!\w)", r"\1.docx", text)
-    text = re.sub(r"\b([\w-]+)\.csv\b(?!\w)", r"\1.xlsx", text)
-    return text
+    """Replace mentions of source file names with the new readable names.
+    Inside fenced code blocks (e.g. folder diagrams) names are swapped as plain text, never bolded."""
+    parts = re.split(r"(^```.*?^```[^\n]*$)", text, flags=re.S | re.M)
+    out = []
+    for i, part in enumerate(parts):
+        code = i % 2 == 1
+        for old, new in sorted(names.items(), key=lambda kv: -len(kv[0])):
+            if code:
+                part = re.sub(rf"(?<![\w/.-]){re.escape(old)}(?![\w-])(?!\.\w)", new, part)
+            else:
+                part = re.sub(rf"\*\*`?{re.escape(old)}`?\*\*|`{re.escape(old)}`|(?<![\w/.-]){re.escape(old)}(?![\w-])(?!\.\w)",
+                              f"**{new}**", part)
+        # Any other file name the buyer is told to create or look for: use the formats they actually have.
+        part = re.sub(r"\b([\w-]+)\.md\b(?!\w)", r"\1.docx", part)
+        part = re.sub(r"\b([\w-]+)\.csv\b(?!\w)", r"\1.xlsx", part)
+        out.append(part)
+    return "".join(out)
 
 
 def _xlsx(csv_text):
@@ -158,6 +167,9 @@ def build_zip(files, top=""):
     return buf.getvalue(), sorted(conv) + ["LICENSE.txt"]
 
 
+PACKAGING_VERSION = 2   # bump when a packaging fix should be re-applied to published kits
+
+
 def needs_upgrade(zip_bytes):
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
         return any(n.lower().endswith((".md", ".csv")) for n in z.namelist())
@@ -178,9 +190,19 @@ def upgrade_zip(zip_bytes):
     return build_zip(files, top)
 
 
-def upgrade_published(items, site):
-    """Re-package every published kit that still ships .md/.csv files. Same download link.
-    Returns the number of kits upgraded; updates each item's "files" list."""
+def sources_from_zip(zip_bytes):
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
+        names = [n for n in z.namelist() if not n.endswith("/")]
+        top = ""
+        if names and all("/" in n for n in names) and len({n.split("/")[0] for n in names}) == 1:
+            top = names[0].split("/")[0] + "/"
+        return {n[len(top):]: z.read(n) for n in names}, top
+
+
+def upgrade_published(items, site, src_dir=None):
+    """Re-package published kits, in place (same download link). A kit is rebuilt when it still
+    ships .md/.csv files, or when its original sources are in src_dir and it was packaged by an
+    older PACKAGING_VERSION. Returns the number of kits rebuilt; updates "files" and "pack_v"."""
     done = 0
     for it in items:
         if it.get("lane") != "products" or not it.get("dl"):
@@ -189,9 +211,19 @@ def upgrade_published(items, site):
         z = Path(site) / "dl" / it["dl"] / f"{slug}.zip"
         if not z.exists():
             continue
-        res = upgrade_zip(z.read_bytes())
+        src = Path(src_dir) / f"{slug}.zip" if src_dir else None
+        res = None
+        if src and src.exists() and it.get("pack_v", 0) < PACKAGING_VERSION:
+            files, top = sources_from_zip(src.read_bytes())
+            if convert(files) is not None:
+                res = build_zip(files, top)
+        if res is None:
+            res = upgrade_zip(z.read_bytes())
         if res:
             z.write_bytes(res[0])
             it["files"] = res[1]
             done += 1
+        if res or not needs_upgrade(z.read_bytes()):
+            if src and src.exists():
+                it["pack_v"] = PACKAGING_VERSION
     return done

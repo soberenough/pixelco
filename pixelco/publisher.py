@@ -7,7 +7,7 @@ from pathlib import Path
 import json
 import os
 
-from .lanes import SITE, page, ADS, ads_head, SITEINFO
+from .lanes import SITE, page, ADS, ads_head, SITEINFO, apply_tool_audit
 from . import storefront
 
 
@@ -34,8 +34,9 @@ def publish(ledger, cfg):
             try:
                 out = SITE / i["url"] / "index.html"
                 out.parent.mkdir(parents=True, exist_ok=True)
-                out.write_text(page(i["title"], i.get("description") or "",
-                                    storefront.product_body(i, items, SITE) + product_jsonld(i, base),
+                blurb = storefront.published_description(i)
+                out.write_text(page(i["title"], blurb,
+                                    storefront.product_body(i, items, SITE) + product_jsonld(i, base, blurb),
                                     depth=2, path=i["url"]))
             except Exception as e:  # one bad item must not lose the whole run
                 ledger.alert(f"couldn't rebuild page for {i.get('id')}: {e}")
@@ -58,7 +59,17 @@ def publish(ledger, cfg):
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(page(title, title, f"<h1>{title}</h1>{text}", depth=1))
 
-    urls = [f"{base}/"] + [f"{base}/{i['url']}" for i in items]
+    # Re-apply tool landmarks and button contrast. Idempotent, so an already-fixed page is unchanged.
+    tools_dir = SITE / "tools"
+    if tools_dir.is_dir():
+        for tool_index in tools_dir.glob("*/index.html"):
+            current = tool_index.read_text()
+            updated = apply_tool_audit(current)
+            if updated != current:
+                tool_index.write_text(updated)
+
+    urls = [f"{base}/"] + [f"{base}/{slug}/" for slug in ("contact", "privacy", "refunds", "terms")] + [
+        f"{base}/{i['url']}" for i in items]
     (SITE / "sitemap.xml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
@@ -80,12 +91,13 @@ def publish(ledger, cfg):
     indexnow(ledger, cfg, base, urls)
 
 
-def product_jsonld(i, base):
+def product_jsonld(i, base, description=None):
     """schema.org Product data so search engines can show the price in results."""
     if not i.get("price") or not base:
         return ""
     data = {"@context": "https://schema.org", "@type": "Product", "name": i["title"],
-            "description": i.get("description") or "", "url": f"{base}/{i['url']}",
+            "description": description if description is not None else (i.get("description") or ""),
+            "url": f"{base}/{i['url']}",
             "brand": {"@type": "Brand", "name": "PixelCo"},
             "offers": {"@type": "Offer", "price": f"{float(i['price']):.2f}", "priceCurrency": "USD",
                        "availability": "https://schema.org/InStock", "url": f"{base}/{i['url']}"}}
@@ -115,8 +127,45 @@ def indexnow(ledger, cfg, base, urls):
 
 def policy_pages(cfg):
     email = cfg.get("contact_email") or ""
-    contact = (f"<p>Email <b>{H.escape(email)}</b>. We aim to reply within two business days.</p>"
-               if email else "<p>Contact details are being set up.</p>")
+    if email:
+        shown = H.escape(email)
+        contact = (f'<p>Email <a href="mailto:{shown}">{shown}</a>. '
+                   "We aim to reply within two business days.</p>"
+                   "<p>Seller: [LEGAL NAME]. Postal address: [ADDRESS]. "
+                   "These bracketed items are placeholders until the seller publishes them.</p>")
+    else:
+        contact = "<p>Contact details are being set up.</p>"
+    shared_privacy = (
+        "<p>The invoice maker can save a draft in your browser's localStorage so you can return to it later. "
+        "That draft stays on your device and is not sent to PixelCo. Clearing the form, or clearing this "
+        "site's data in your browser, removes it.</p>"
+        "<p>This site is hosted on GitHub Pages. Like most web hosts, GitHub may keep standard server logs, "
+        "such as IP address, browser type, and the page requested. See the "
+        '<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">'
+        "GitHub Privacy Statement</a>.</p>"
+        "<p>When you buy, payment details go directly to the checkout provider (Gumroad or Stripe). "
+        "PixelCo never sees your card details. Read the "
+        '<a href="https://gumroad.com/privacy">Gumroad privacy policy</a> and the '
+        '<a href="https://stripe.com/privacy">Stripe privacy policy</a> for how those companies handle your data.</p>'
+        "<p>A separate process submits this site's page URLs to IndexNow so search engines can notice updates. "
+        "Those pings are about the pages on this site. They are not a record of who visits.</p>"
+        "<p>This shop is for adults running a business. It is not directed at children under 13.</p>"
+    )
+    if ads_head():
+        privacy = (
+            "<p>This site shows ads from Google AdSense. Google and its partners may use cookies "
+            "to show ads based on your visits to this and other sites. You can turn off "
+            'personalized ads at <a href="https://adssettings.google.com">Google Ads Settings</a>. '
+            'See <a href="https://policies.google.com/technologies/ads">how Google uses data '
+            "from sites that show its ads</a>.</p>"
+            "<p>PixelCo itself does not offer accounts on this site, and these pages do not use "
+            "analytics cookies or tracking scripts. The free tools run in your browser.</p>"
+            + shared_privacy)
+    else:
+        privacy = (
+            "<p>PixelCo does not offer accounts on this site. These pages do not use analytics cookies, "
+            "advertising, or tracking scripts. The free tools run in your browser.</p>"
+            + shared_privacy)
     return [
         ("contact", "Contact",
          contact + "<p>For a problem with an order, include the product name and the email "
@@ -135,18 +184,10 @@ def policy_pages(cfg):
          "Please don't resell or redistribute them as they are.</p>"
          "<p>Products, tools and guides are written with the help of AI and reviewed by "
          "automated checks. They are general information, not professional legal, financial "
-         "or medical advice.</p>"),
-        ("privacy", "Privacy",
-         (("<p>This site shows ads from Google AdSense. Google and its partners may use cookies "
-           "to show ads based on your visits to this and other sites. You can turn off "
-           "personalized ads at <a href=\"https://adssettings.google.com\">Google Ads Settings</a>. "
-           "See <a href=\"https://policies.google.com/technologies/ads\">how Google uses data "
-           "from sites that show its ads</a>.</p><p>PixelCo itself has no accounts and no analytics. "
-           "Our free tools run entirely in your browser and send nothing anywhere.</p>")
-          if ads_head() else
-          "<p>This site has no accounts, no cookies, no analytics and no tracking scripts. "
-          "Our free tools run entirely in your browser and send nothing anywhere.</p>")
-         + "<p>When you buy, payment details go directly to our checkout provider (Gumroad or "
-         "Stripe). PixelCo never sees your card details. See their privacy policies for how "
-         "they handle your data.</p>"),
+         "or medical advice.</p>"
+         "<p>The seller is [LEGAL NAME], trading as PixelCo. Postal address: [ADDRESS]. "
+         "Governing law and jurisdiction: [GOVERNING LAW]. These bracketed items are placeholders "
+         "until the seller publishes them.</p>"
+         "<p>This shop is for adults running a business. It is not directed at children under 13.</p>"),
+        ("privacy", "Privacy", privacy),
     ]

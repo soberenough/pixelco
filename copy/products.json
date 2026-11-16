@@ -1,5 +1,5 @@
 {
-  "_about": "Optional store copy per kit, keyed by the kit's slug. Shown on the storefront card and product page. Every claim must be true of the files actually in the kit: no invented results, reviews, testimonials or guarantees. Fields: tagline (one sentence, <=170 chars), who_for (1-2 sentences), outcomes (3-6 short lines), file_notes (file name -> one line on what that file is and does).",
+  "_about": "Optional store copy per kit, keyed by the kit's slug. Shown on the storefront card and product page. Every claim must be true of the files actually in the kit: no invented results, reviews, testimonials or guarantees. Fields: tagline (one sentence, <=170 chars), description (replaces the vault blurb on the card, product page, and structured data when that blurb over-promises), who_for (1-2 sentences), outcomes (3-6 short lines), file_notes (file name -> one line on what that file is and does).",
   "freelance-proposal-kit": {
     "tagline": "Turn \"can you send me a quote?\" into a proposal the client can say yes to, with three priced options and follow-ups for every stage.",
     "who_for": "Solo freelancers and small studios who write proposals for client projects and want them to look professional without starting from a blank page each time.",
@@ -18,5 +18,17 @@
       "proposal-checklist.md": "Pre-send checklist covering the client's problem, scope, price and terms",
       "proposal-tracker.csv": "Spreadsheet to log every proposal, its options, follow-ups, outcome and why you won or lost"
     }
+  },
+  "freelance-client-pipeline-kit": {
+    "description": "A weekly prospecting kit for uneven client work: an ideal client profile with a completed example, ten lead sources ranked by effort, ten outreach and follow-up emails, pipeline maths with worked numbers, a lead tracker with example rows and a weekly prospecting routine."
+  },
+  "freelance-project-wrap-up-kit": {
+    "description": "Close a project and line up what comes next: a six-stage wrap-up checklist, a client handover document with a completed example, eight closing and check-in emails, a seven-question feedback form, a case study template and a follow-up tracker for repeat work and referrals."
+  },
+  "freelance-rate-increase-kit": {
+    "description": "Templates for telling existing clients about a higher rate: a rate review worksheet with worked maths, a client-by-client review tracker, a 90-day timeline, ten notice and follow-up emails from standard to stepped to a professional exit, scripts for eight common replies, and wording that makes future increases routine."
+  },
+  "freelance-irregular-income-kit": {
+    "description": "Templates for planning a monthly draw when client income is lumpy. Baseline budget, 12-month income history, step-by-step salary and buffer setup with a worked example, a month-by-month buffer planner, a lean month playbook, a 20-minute monthly routine and copy-in spreadsheet formulas. Budgeting templates, not financial advice."
   }
 }

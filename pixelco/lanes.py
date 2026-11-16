@@ -19,9 +19,21 @@ from .guard import lock_tool
 SITE = Path("site")
 
 
+GUIDE_DISCLAIMER = ("<p><em>This guide is general information, not professional legal, "
+                    "financial or tax advice.</em></p>")
+
+
+def _with_guide_disclaimer(html):
+    """Every guide carries a not-advice line. Specs that already say so are left alone."""
+    low = html.lower()
+    if any(s in low for s in ("not legal", "not financial", "not professional", "not tax")):
+        return html
+    return html + GUIDE_DISCLAIMER
+
+
 def build_content(spec, ledger, cfg, stripe=None):
     slug = spec["slug"]
-    body = spec["html"].replace("<a ", '<a rel="nofollow noopener" ')
+    body = _with_guide_disclaimer(spec["html"].replace("<a ", '<a rel="nofollow noopener" '))
     out = SITE / "blog" / slug / "index.html"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(page(spec["title"], spec["description"],
@@ -30,12 +42,51 @@ def build_content(spec, ledger, cfg, stripe=None):
             "url": f"blog/{slug}/", "description": spec["description"]}
 
 
+TOOL_MORE = ('<p style="text-align:center;margin:2em 0;font:14px system-ui">'
+             '<a href="../../">More free tools from PixelCo</a></p>')
+# White text on these accent colours fails WCAG AA. --btn is a darker fill for the primary button only.
+_TOOL_BTN = {
+    ("#2f8a4c", "#4fbf74"): ("#2b7f46", "#2f7e4a"),
+    ("#7a4fb3", "#b192e6"): ("#7a4fb3", "#7a4fb3"),
+    ("#2f6fb3", "#6aa8ea"): ("#2f6fb3", "#2f6fb3"),
+}
+_TOOL_SKIP_CSS = (
+    ".skip{position:absolute;left:12px;top:12px;padding:.55em .9em;background:#2b7f46;color:#fff;"
+    "font-weight:700;text-decoration:none;border-radius:6px;z-index:20;transform:translateY(-200%)}"
+    ".skip:focus{transform:none}body>nav{height:0;margin:0;padding:0}"
+    "footer a{color:#2f62c4}@media (prefers-color-scheme:dark){footer a{color:#8fb0ff}}"
+)
+
+
+def apply_tool_audit(html):
+    """Skip link, footer landmark, and AA button contrast. Safe to run more than once."""
+    if "button.primary{background:var(--accent);border-color:var(--accent);color:#fff}" in html and "--btn:" not in html:
+        for (light, dark), (btn_light, btn_dark) in _TOOL_BTN.items():
+            if f"--accent:{light}" in html and f"--accent:{dark}" in html:
+                html = html.replace(f"--accent:{light};", f"--accent:{light};--btn:{btn_light};", 1)
+                html = html.replace(f"--accent:{dark};", f"--accent:{dark};--btn:{btn_dark};", 1)
+                html = html.replace(
+                    "button.primary{background:var(--accent);border-color:var(--accent);color:#fff}",
+                    "button.primary{background:var(--btn);border-color:var(--btn);color:#fff}", 1)
+                break
+    if "Skip to content" not in html and "</style>" in html:
+        html = html.replace("</style>", _TOOL_SKIP_CSS + "</style>", 1)
+        html = html.replace(
+            "<body><main>",
+            '<body><nav><a class="skip" href="#content">Skip to content</a></nav><main id="content">', 1)
+        html = html.replace(
+            "<body>\n<main>",
+            '<body><nav><a class="skip" href="#content">Skip to content</a></nav><main id="content">', 1)
+    if TOOL_MORE in html and f"<footer>{TOOL_MORE}</footer>" not in html:
+        html = html.replace(TOOL_MORE, f"<footer>{TOOL_MORE}</footer>", 1)
+    return html
+
+
 def build_tool(spec, ledger, cfg, stripe=None):
     slug = spec["slug"]
     html = lock_tool(spec["html"])
-    back = ('<p style="text-align:center;margin:2em 0;font:14px system-ui">'
-            '<a href="../../">More free tools from PixelCo</a></p>')
-    html = html.replace("</body>", back + "</body>") if "</body>" in html else html + back
+    html = html.replace("</body>", TOOL_MORE + "</body>") if "</body>" in html else html + TOOL_MORE
+    html = apply_tool_audit(html)
     out = SITE / "tools" / slug / "index.html"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(html)
@@ -146,8 +197,8 @@ def _crosssell(ledger):
 
 
 STYLE = """
-:root{--bg:#fbfaf7;--fg:#22212b;--dim:#6b6878;--line:#e4e1d8;--accent:#3b6fd4;--btn:#2f8a4c}
-@media (prefers-color-scheme:dark){:root{--bg:#17161f;--fg:#ebe8df;--dim:#a19db0;--line:#2e2c3a;--accent:#8fb0ff;--btn:#3fa862}}
+:root{--bg:#fbfaf7;--fg:#22212b;--dim:#6b6878;--line:#e4e1d8;--accent:#3b6fd4;--btn:#2b7f46;--badge:#3b6fd4}
+@media (prefers-color-scheme:dark){:root{--bg:#17161f;--fg:#ebe8df;--dim:#a19db0;--line:#2e2c3a;--accent:#8fb0ff;--btn:#2f7e4a;--badge:#3a66c4}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.65 system-ui,-apple-system,Segoe UI,sans-serif}
 .wrap{max-width:720px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-left,0px)) 40px}
 nav,footer{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--dim)}
@@ -155,7 +206,7 @@ nav{padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:24px}
 nav b a{color:var(--fg);text-decoration:none;font-size:17px}
 footer{margin-top:48px;padding-top:12px;border-top:1px solid var(--line)}
 a{color:var(--accent)}h1{line-height:1.2;text-wrap:balance}
-.btn{display:inline-block;background:var(--btn);color:#fff;padding:.6em 1.3em;border-radius:6px;text-decoration:none;font-weight:600}
+.btn{display:inline-block;background:var(--btn);color:#fff;padding:.6em 1.3em;border-radius:6px;text-decoration:none;font-weight:600}.skip{position:absolute;left:12px;top:12px;padding:.55em .9em;background:#2b7f46;color:#fff;font-weight:700;text-decoration:none;border-radius:6px;z-index:20;transform:translateY(-200%)}.skip:focus{transform:none}
 .price{font-size:24px;font-weight:700}.small{font-size:14px;color:var(--dim)}
 ul.items{list-style:none;padding:0}ul.items li{padding:8px 0;border-bottom:1px solid var(--line)}
 aside{margin-top:40px;padding-top:12px;border-top:1px solid var(--line)}
@@ -202,9 +253,10 @@ def page(title, description, body, depth=0, index=True, path=None):
         f"<title>{H.escape(title)} · PixelCo</title>"
         f'<meta name="description" content="{H.escape(description)}">{robots}{seo_head(title, description, path)}'
         f"<style>{STYLE}</style>{ads_head()}</head><body><div class=wrap>"
-        f'<nav><b><a href="{up}./">PixelCo</a></b><a href="{up}./#shop">Shop</a>'
+        f'<nav><a class=skip href="#content">Skip to content</a><b><a href="{up}./">PixelCo</a></b>'
+        f'<a href="{up}./#shop">Shop</a>'
         f'<a href="{up}./#tools">Free tools</a><a href="{up}./#guides">Guides</a></nav>'
-        f"{body}"
+        f"<main id=content>{body}</main>"
         f'<footer><a href="{up}contact/">Contact</a><a href="{up}refunds/">Refunds</a>'
         f'<a href="{up}terms/">Terms</a><a href="{up}privacy/">Privacy</a></footer>'
         "</div></body></html>"

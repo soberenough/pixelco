@@ -35,7 +35,7 @@ button.pri{background:var(--acc);border-color:var(--acc);color:var(--bg)}button.
 #inv .pre{white-space:pre-wrap}
 #inv{overflow-x:auto;overflow-wrap:anywhere}@media (max-width:500px){#inv{padding:16px}#inv .num{white-space:normal}}
 @media print{body{background:#fff}main>header,.form,.noprint{display:none!important}.cols{display:block}#inv{border:0;padding:0;position:static}main{padding:0;max-width:none}}
-</style></head><body><main>
+.skip{position:absolute;left:12px;top:12px;padding:.55em .9em;background:#2b7f46;color:#fff;font-weight:700;text-decoration:none;border-radius:6px;z-index:20;transform:translateY(-200%)}.skip:focus{transform:none}body>nav{height:0;margin:0;padding:0}footer a{color:#2f62c4}@media (prefers-color-scheme:dark){footer a{color:#8fb0ff}}</style></head><body><nav><a class="skip" href="#content">Skip to content</a></nav><main id="content">
 <header><h1>Freelance Invoice Maker</h1>
 <p class="lead">Fill in the form and a clean invoice builds itself on the right. It checks for the details that most often delay payment, works out the due date and totals, and prints or saves as a PDF. Nothing leaves your device.</p></header>
 <div class="cols">
@@ -131,4 +131,4 @@ $('issued').value=today();$('po').value='';$('period').value='';$('disc').value=
 $('clear').addEventListener('click',function(){try{localStorage.removeItem(KEY)}catch(e){}F.forEach(function(k){var el=$(k);el.value=el.defaultValue||''});$('terms').value='14';$('cur').value='USD';$('taxn').value='Tax';$('num').value='2026-001';$('issued').value=today();$('lines').innerHTML='';addLine();render();$('msg').textContent='Cleared.'});
 if(!load()){$('issued').value=today();addLine('',1,'')}
 render();
-</script><p style="text-align:center;margin:2em 0;font:14px system-ui"><a href="../../">More free tools from PixelCo</a></p></body></html>
+</script><footer><p style="text-align:center;margin:2em 0;font:14px system-ui"><a href="../../">More free tools from PixelCo</a></p></footer></body></html>

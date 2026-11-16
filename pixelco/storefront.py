@@ -99,10 +99,29 @@ def initials(title):
     return ("".join(w[0] for w in words[:2]) or title[:2]).upper()
 
 
+def _copy_entry(item, copy):
+    """`copy` is either the whole products.json object or one kit's entry."""
+    if not isinstance(copy, dict):
+        return {}
+    slug = slug_of(item)
+    entry = copy.get(slug)
+    return entry if isinstance(entry, dict) else copy
+
+
+def published_description(item, copy=None):
+    """Buyer-facing description. copy/products.json can replace a vault blurb that over-promises."""
+    if copy is None:
+        copy = load_copy()
+    entry = _copy_entry(item, copy)
+    return (entry.get("description") if isinstance(entry, dict) else None) or item.get("description") or ""
+
+
 def card(item, copy, depth=0):
     c = copy.get(slug_of(item), {})
+    if not isinstance(c, dict):
+        c = {}
     title = H.escape(item["title"])
-    tagline = H.escape(c.get("tagline") or short(item.get("description", "")))
+    tagline = H.escape(c.get("tagline") or short(published_description(item, copy)))
     n = len(display_files(item.get("files") or [], {}))
     price = f'${float(item["price"]):.0f}' if item.get("price") else ""
     meta = " · ".join(x for x in (f"{n} ready-to-use files" if n else "", price) if x)
@@ -130,9 +149,10 @@ def index_body(items, site):
            'Open them in the tools you already use.</p>'
            '<p class=cta><a class=btn href="#shop">Browse the kits</a> '
            '<a class=btn2 href="#tools">Try a free tool</a></p>'
-           '<ul class=trust><li>Instant download</li><li>Works in Excel, Google Sheets, Word or Notion</li>'
+           '<ul class=trust><li>Instant download</li>'
+           '<li>Word, PDF and Excel (open in Google Docs, Sheets, Pages or Numbers)</li>'
            '<li>Full refund within 14 days if a file is broken or not as described</li>'
-           + ('<li>No accounts needed</li>' if _ads_on() else '<li>No accounts, no tracking</li>')
+           + ('<li>No accounts needed</li>' if _ads_on() else '<li>No accounts, no analytics cookies on this site</li>')
            + '</ul></section>']
 
     if bundle:
@@ -210,8 +230,10 @@ def display_files(files, notes):
 
 def product_body(item, items, site):
     copy = load_copy().get(slug_of(item), {})
+    if not isinstance(copy, dict):
+        copy = {}
     price = float(item.get("price") or 0)
-    desc = item.get("description") or ""
+    desc = published_description(item, copy)
     files = list(item.get("files") or [])
     notes = copy.get("file_notes") or {}
     url, processor = buy_link(item)
@@ -243,7 +265,7 @@ def product_body(item, items, site):
                  f"<p class=small>Instant download after checkout. Payments are processed by {processor or 'Stripe'}. "
                  'Full refund within 14 days if a file is broken or not as described: see our '
                  '<a href="../../refunds/">refund policy</a>. General information, not legal, tax or '
-                 "financial advice.</p>")
+                 "financial advice. Written with the help of AI and checked against a quality checklist.</p>")
     return "".join(parts)
 
 
@@ -260,7 +282,7 @@ h3{margin:28px 0 2px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin:12px 0 8px}
 .card{display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:var(--fg);background:color-mix(in srgb,var(--bg) 92%,var(--accent));transition:transform .12s,border-color .12s}
 .card:hover{transform:translateY(-2px);border-color:var(--accent)}
-.badge{width:40px;height:40px;border-radius:9px;display:grid;place-items:center;font-weight:800;font-size:15px;color:#fff;background:var(--accent)}
+.badge{width:40px;height:40px;border-radius:9px;display:grid;place-items:center;font-weight:800;font-size:15px;color:#fff;background:var(--badge)}
 .ct{font-weight:700;line-height:1.3}.cd{font-size:15px;color:var(--dim);line-height:1.45}.cm{font-size:13px;color:var(--dim);margin-top:auto}
 .card.tool .ct::before{content:"⚙ ";color:var(--accent)}
 ul.guides{list-style:none;padding:0}ul.guides li{padding:10px 0;border-bottom:1px solid var(--line)}ul.guides .small{display:block}

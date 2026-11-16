@@ -23,7 +23,7 @@ td.n,th.n{text-align:right}tfoot td{font-weight:600}
 textarea{width:100%;min-height:180px;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
 ul.tips{margin:0;padding-left:20px;color:var(--mute)}small{color:var(--mute)}
 @media (max-width:520px){.ms{grid-template-columns:1fr 64px 72px 32px}}
-</style></head><body><main>
+.skip{position:absolute;left:12px;top:12px;padding:.55em .9em;background:#2b7f46;color:#fff;font-weight:700;text-decoration:none;border-radius:6px;z-index:20;transform:translateY(-200%)}.skip:focus{transform:none}body>nav{height:0;margin:0;padding:0}footer a{color:#2f62c4}@media (prefers-color-scheme:dark){footer a{color:#8fb0ff}}</style></head><body><nav><a class="skip" href="#content">Skip to content</a></nav><main id="content">
 <h1>Deposit and Milestone Payment Schedule Builder</h1>
 <p class="lead">Split a freelance project into a deposit and milestone payments. See exactly what each invoice is, when it's due, and the most you could ever be owed at once.</p>
 
@@ -132,4 +132,4 @@ function copy(s){var ta=$("out");var keep=ta.value;ta.value=s;ta.select();var ok
  if(navigator.clipboard&&!ok){navigator.clipboard.writeText(s).then(function(){},function(){})}ta.value=keep;$("copied").textContent="Copied";setTimeout(function(){$("copied").textContent=""},1500)}
 $("copy").onclick=function(){copy(lastText)};$("copycsv").onclick=function(){copy(lastCsv)};
 drawList();calc();
-</script><p style="text-align:center;margin:2em 0;font:14px system-ui"><a href="../../">More free tools from PixelCo</a></p></body></html>
+</script><footer><p style="text-align:center;margin:2em 0;font:14px system-ui"><a href="../../">More free tools from PixelCo</a></p></footer></body></html>

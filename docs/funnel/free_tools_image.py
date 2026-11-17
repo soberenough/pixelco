@@ -14,7 +14,7 @@ ITEMS = [
     ("Self-employed taxes", "IRS tax center", "irs.gov → self-employed tax center"),
     ("Quarterly tax payments", "IRS estimated taxes", "irs.gov → estimated taxes"),
     ("Free small-business help", "SBA", "sba.gov"),
-    ("Late-payment emails (free)", "PixelCo templates", "link in bio"),
+    ("Payment reminder templates", "PixelCo kits", "$9 · link in bio"),
 ]
 im = Image.new("RGB", (W, H), INK); d = ImageDraw.Draw(im)
 d.text((72, 96), "GET PAID", font=B(118), fill=WHITE)
@@ -26,7 +26,7 @@ for what, name, url in ITEMS:
     d.text((72, y), what.upper(), font=M(22), fill=DIM)
     d.text((72, y + 30), name, font=B(40), fill=WHITE)
     tw = d.textlength(name, font=B(40))
-    d.text((72 + tw + 18, y + 42), url, font=R(28), fill=ACC if name == "PixelCo templates" else DIM)
+    d.text((72 + tw + 18, y + 42), url, font=R(28), fill=ACC if name == "PixelCo kits" else DIM)
     y += 92
 d.text((72, H - 72), "Save this.  ·  @pixelco.shop", font=M(30), fill=WHITE)
 im.save("site/social/get-paid-for-free-1080x1350.png")

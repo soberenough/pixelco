@@ -90,3 +90,49 @@ The DM the automation sends (Meta "Comment to message", keyword PAID):
 ## Go / no-go after 4 weeks (suggested)
 - Keep going if: ≥1 kit sale per 100 free downloads, or comments and downloads clearly trending up.
 - Stop or change format if: <20 comments total across 12 reels.
+
+---
+
+## Added 2026-11-17 (Grok's ideas 21, 22, 24, 25 on #15)
+
+**13. "How to get paid on time" (animated explainer, ~45 s; idea 21 format)**
+Black background, one concept per beat, white text with the brand orange for key words, calm voiceover or captions only.
+- 0–4 s: "Most late invoices aren't refused. They're forgotten." (invoice icon fades into a pile)
+- 4–12 s: **Before the work:** deposit and due date in writing. (Payment Terms doc on screen, highlight the deposit line)
+- 12–20 s: **Day 0:** send the invoice with the PO number and the right contact. (Invoice Checklist on screen)
+- 20–28 s: **Day 1 after it's due:** friendly reminder, invoice attached again. (Reminder 1 on screen)
+- 28–36 s: **Day 7:** "Is anything blocking this? I'll fix it today." (Reminder 2)
+- 36–42 s: **Day 30:** "Please confirm a payment date." (Reminder 3)
+- 42–45 s: "Save this." End card: PixelCo pixel P.
+- CTA variant B (for the A/B ChatGPT is weighing): replace "Save this" with "Comment PAID for all three emails."
+- Rules: real kit templates only, no income numbers, no "this got me paid $X."
+
+**14. "Why freelancers stay broke even when they're busy" (motion graphics, ~60 s; idea 22 structure)**
+Simple shapes and captions, no paid animation tools.
+- 0–5 s: "Busy freelancers stay broke. Because they're lazy? No."
+- 5–18 s: **One metaphor:** a rocket at 99% of escape velocity doesn't get 99% of the way. It falls back. "The work is done. The cash never lands."
+- 18–40 s: **Three concrete leaks**, one per beat: (1) a 30-day-late invoice means rent goes on a card; (2) no deposit means you fund the client's project; (3) no late-fee clause means paying late costs them nothing.
+- 40–52 s: **The loop:** short on cash → take any job → less time to chase invoices → shorter on cash.
+- 52–60 s: **The way out:** deposit up front, a written late-fee clause, a reminder schedule you never skip. Kit templates on screen. "Save this."
+- Rules: no income numbers, no "I made…", no stock footage of people.
+
+**15. "GET PAID FOR FREE" static image (idea 24)**
+`site/social/get-paid-for-free-1080x1350.png`, built by `docs/funnel/free_tools_image.py`. Seven free resources plus one PixelCo line.
+- **Links verified (HTTP 200 from GitHub's servers, 2026-11-17):** Wave invoicing, Zoho Invoice (US), Invoice-Generator, Freelancers Union, IRS self-employed tax center, IRS estimated taxes, SBA.
+- **Left out:**
+  - PayPal invoicing, SCORE and Nolo: their bot walls blocked the check (403). A person needs to verify before adding.
+  - Canva invoices: needs a login.
+  - Stripe Invoicing: paid per invoice, not free.
+  - FTC small-business page and USA.gov small claims: the URLs return 404.
+- The PixelCo line says "link in bio" until the $0 Gumroad product exists.
+- Caption: "Stop buying invoicing courses. These are free. Save this."
+
+**16. Flash-slide reel (~6 s; idea 25 format)**
+Our own screen recording of the kit or plain brand-colour B-roll, no borrowed footage, royalty-free music from the platform's library.
+- 0–2.5 s hook: "The 6-step system for getting paid on time. Pause to read." *(Not the suggested "clients paid me late for 2 years": that's a personal claim we can't back up.)*
+- 2.5–3.5 s, slide **1. Put it in writing:** deposit %, due date, late fee (template: Payment Terms).
+- 3.5–4.5 s, slide **3. Send it right:** PO number, right contact, due date in the subject line (free tool: *Wave* or *Zoho Invoice*).
+- 4.5–5.5 s, slide **5. Day 7 follow-up:** "Is anything blocking this? I'll fix it today."
+- 5.5–6 s, end card: "Steps 2, 4 and 6 plus the email templates: comment PAID."
+- Tool names underlined in yellow.
+- Honesty check: steps 2, 4 and 6 are real and free in the DM (2 = Invoice Checklist, 4 = Day 1 reminder, 6 = Day 30 email), so the curiosity gap pays off. Nothing is held back behind a payment.

@@ -148,5 +148,10 @@ def policy_pages(cfg):
           "Our free tools run entirely in your browser and send nothing anywhere.</p>")
          + "<p>When you buy, payment details go directly to our checkout provider (Gumroad or "
          "Stripe). PixelCo never sees your card details. See their privacy policies for how "
-         "they handle your data.</p>"),
+         "they handle your data.</p>"
+         "<p>This site is hosted on GitHub Pages. Like any web host, GitHub may log technical "
+         "data such as visitor IP addresses for security; see "
+         "<a href=\"https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement\">"
+         "GitHub's privacy statement</a>. PixelCo's pages load no third-party fonts or scripts "
+         "beyond those named here.</p>"),
     ]

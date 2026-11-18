@@ -2,8 +2,10 @@
 
 Allocation is Thompson sampling on revenue-per-item, so lanes that earn get
 more work while every live lane still gets tested (15% exploration floor).
-A lane that ships `kill_after` items with $0 revenue is shut down. If every
-lane dies, the CEO revives them all.
+A paid lane that ships `kill_after` items with $0 revenue is shut down. Free
+lanes (guides and tools) can't earn directly unless a tip link is set, so they
+are never shut down for having no sales; they bring visitors to the shop.
+If every lane dies, the CEO revives them all.
 
 The result is written to state["next_plan"], which the daily Claude session
 reads to know what to make.
@@ -20,6 +22,12 @@ STAGES = [  # (min cash, stage, items per day)
     (2000, "expansion", 8),
 ]
 LANES = ["content", "tools", "products"]
+FREE_LANES = {"content", "tools"}  # earn only through tips and cross-sells
+
+
+def can_earn(name, cfg):
+    """A free lane only has its own revenue if a tip link is configured."""
+    return name not in FREE_LANES or bool(cfg.get("support_link_id"))
 
 
 def plan(ledger, cfg, rng=random):
@@ -28,7 +36,8 @@ def plan(ledger, cfg, rng=random):
 
     for name in LANES:
         L = ledger.lane(name)
-        if L["alive"] and L["items"] >= kill_after and L["revenue"] == 0:
+        if (L["alive"] and can_earn(name, cfg)
+                and L["items"] >= kill_after and L["revenue"] == 0):
             L["alive"] = False
             ledger.event("ceo", f"shutting down lane '{name}' (no sales after {L['items']} items)")
     alive = [n for n in LANES if ledger.lane(n)["alive"]]

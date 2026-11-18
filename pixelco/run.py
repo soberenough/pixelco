@@ -147,7 +147,8 @@ def business_day(cfg, inbox):
     led.agent("marketer", "idle", "")
 
     led.agent("ceo", "working", "planning tomorrow")
-    plan(led, cfg.get("strategy", {}))
+    support = (cfg.get("stripe") or {}).get("support_link_id")
+    plan(led, {**(cfg.get("strategy") or {}), "support_link_id": support})
     led.agent("ceo", "idle", led.state["growth"]["stage"])
     led.state["rejected"] = led.state["rejected"][-50:]
     led.save()

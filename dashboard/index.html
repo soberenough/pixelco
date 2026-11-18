@@ -48,6 +48,7 @@ ol.log li.now{background:#2e2b4a}
     <h1>PixelCo</h1>
     <span class="badge" id="stageBadge">bootstrap</span>
     <span class="badge sim" id="simBadge" hidden>simulated sample</span>
+    <span class="badge sim" id="testBadge" hidden title="Checkout links are Stripe test-mode links. Sales recorded so far are test purchases, not real money.">stripe test mode</span>
     <span class="sub" id="dayLine">Loading the office…</span>
   </header>
 
@@ -163,6 +164,8 @@ function render(s){
   $("pace").textContent=(s.growth?.items_per_cycle||1)+"/day";
   $("stageBadge").textContent=s.growth?.stage||"bootstrap";
   $("simBadge").hidden=!s.demo;
+  const prods=(s.items||[]).filter(i=>i.lane==="products");
+  $("testBadge").hidden=!prods.some(i=>/\/test_/.test(i.buy_url||""));
   $("dayLine").textContent=`Day ${s.cycle||0} · founded ${String(s.founded||"").slice(0,10)}`;
 
   const lanes=Object.entries(s.lanes||{}),tot=lanes.reduce((a,[,l])=>a+l.revenue,0)||1;

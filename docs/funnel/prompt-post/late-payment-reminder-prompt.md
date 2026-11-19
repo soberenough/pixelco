@@ -18,7 +18,9 @@ Original due date: [DATE]
 Today's date: [DATE]
 Work delivered: [ONE LINE, e.g. "homepage redesign, delivered Oct 3"]
 How to pay: [PAYMENT LINK / BANK DETAILS / "see attached invoice"]
-Late fee in my contract: [e.g. "1.5% per month after 30 days", or "none"]
+Late fee in my signed contract: [e.g. "1.5% per month after 30 days", or "none"]
+Pause date for new work: [DATE, or "none"]
+Next steps I'm willing to take: [late fee only / late fee + collections / none]
 What I've already sent: [e.g. "nothing yet" / "one friendly email on Nov 4"]
 Relationship: [new client / repeat client / my biggest client]
 My tone: [warm / neutral / direct]
@@ -28,19 +30,21 @@ My tone: [warm / neutral / direct]
 Pick the stage from how many days late the invoice is, unless I say otherwise:
 1. Friendly nudge (1-6 days late): assume it slipped through. Light, helpful.
 2. Firm follow-up (7-20 days late): restate the facts, ask for a payment date.
-3. Pause notice (21-44 days late): say new work pauses on a specific date
+3. Pause notice (21-44 days late): say new work pauses on my pause date
    until it's paid. Mention the late fee only if my contract has one.
-4. Final notice (45+ days late): the last reminder before next steps. Name a
-   next step (contract late fee, collections, small claims) only if I've told
-   you I'm willing to take it. Never invent a consequence.
+4. Final notice (45+ days late): the last reminder before next steps. Name
+   only the next steps I listed above. If I wrote "none", name none.
 </stages>
 
 <rules>
 - Always include: invoice number, amount, original due date, how to pay.
 - Ask for ONE specific thing: payment by a date, or a reply with a date.
 - No "just checking in", no apologising for asking, no guilt-tripping.
+- Never invent dates, fees or consequences. If the pause date or next steps
+  are missing, ask me first; if I say "none", leave them out.
 - No legal threats or legal advice. Don't mention lawyers unless I said to.
-- Under 120 words. Plain language. No exclamation marks after stage 1.
+- For business invoices only, not personal or consumer debts.
+- Under 120 words. Plain language. No emojis. No exclamation marks after stage 1.
 - If anything in <invoice> is missing, ask me for it before writing.
 </rules>
 

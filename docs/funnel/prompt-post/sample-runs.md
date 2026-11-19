@@ -1,12 +1,12 @@
 # Test runs of the late-payment prompt (Claude, 2026-11-19)
 
-Three made-up invoices, run through the prompt exactly as a buyer would.
+Four made-up invoices, run through the prompt exactly as a buyer would.
 Checks: right stage picked, all four facts present, one clear ask, under 120 words,
 no "just checking in", no invented consequences, missing info gets asked for.
 
 ## Test A: 3 days late, warm tone, repeat client
 Input: Dana · Brightleaf Studio · INV-104 · $850 USD · due Nov 3 · today Nov 6 ·
-"logo refresh, delivered Oct 20" · Stripe link · no late fee · nothing sent yet · repeat client · warm
+"logo refresh, delivered Oct 20" · Stripe link · no late fee · pause date none · next steps none · nothing sent yet · repeat client · warm
 
 **Output**
 1. Stage 1, friendly nudge: 3 days late and nothing sent yet, so it probably slipped through.
@@ -26,7 +26,7 @@ Input: Dana · Brightleaf Studio · INV-104 · $850 USD · due Nov 3 · today No
 
 ## Test B: 40 days late, direct tone, two reminders already sent, contract late fee
 Input: Marcus · Halden Logistics · #2291 · $2,400 USD · due Oct 10 · today Nov 19 ·
-"warehouse dashboard build, delivered Sep 26" · bank details on invoice · 1.5%/month after 30 days ·
+"warehouse dashboard build, delivered Sep 26" · bank details on invoice · 1.5%/month after 30 days · pause date Nov 26 · next steps: late fee only ·
 friendly email Oct 15, firm follow-up Oct 28 · biggest client · direct
 
 **Output**
@@ -44,7 +44,14 @@ friendly email Oct 15, firm follow-up Oct 28 · biggest client · direct
 > Regards,
 > [Your name]
 4. Text: "Marcus, invoice #2291 ($2,400) is 40 days overdue. Please send payment or a firm date by Nov 25, as new work pauses on Nov 26."
-5. Next: if there's no payment by Nov 26 (the pause date, 47 days late), send stage 4. It will only name a next step you've confirmed you'll take.
+5. Next: if there's no payment by Nov 26 (your pause date, 47 days late), send stage 4. It names only the step you listed: the contract late fee.
+
+## Test D: pause date missing at 40 days late (added after ChatGPT's review)
+Input: same as B, but "Pause date for new work" left as [DATE, or "none"]
+
+**Output**
+> Before I write this: it's 40 days late, so this is the pause notice. What date should
+> new work pause? Or say "none" and I'll leave the pause out.
 
 ## Test C: missing information
 Input: same as A, but "How to pay" was left as [PAYMENT LINK / BANK DETAILS ...]
@@ -62,3 +69,4 @@ Input: same as A, but "How to pay" was left as [PAYMENT LINK / BANK DETAILS ...]
 | Email under 120 words | ✓ | ✓ | n/a |
 | No "just checking in" / no invented threats | ✓ | ✓ (fee comes from the contract) | n/a |
 | Asks for missing info | n/a | n/a | ✓ |
+| Doesn't invent a pause date (Test D) | | | ✓ asks first |

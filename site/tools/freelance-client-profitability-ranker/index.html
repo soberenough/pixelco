@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; form-action 'none'; base-uri 'none'">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Which Clients Are Worth Keeping? Freelance Client Profitability Ranker</title>
+<style>
+:root{--bg:#f7f7f4;--card:#fff;--ink:#1d1f23;--muted:#5d636d;--line:#dcdfe4;--accent:#2457c5;--good:#17794a;--warn:#a66300;--bad:#b3261e;--goodbg:#e6f4ec;--warnbg:#fdf1de;--badbg:#fbe7e5;--input:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#15171a;--card:#1f2226;--ink:#eceef1;--muted:#a3a9b3;--line:#363a41;--accent:#7ea6ff;--good:#5fd39a;--warn:#f0b35a;--bad:#ff8a80;--goodbg:#1b3428;--warnbg:#3a2d17;--badbg:#3d1f1d;--input:#16181b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.6rem;line-height:1.25;margin:.2em 0 .3em}
+h2{font-size:1.15rem;margin:0 0 .6em}
+p.lead{color:var(--muted);margin:0 0 1.2em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:0 0 16px}
+.row{display:flex;flex-wrap:wrap;gap:12px}
+.row label{flex:1 1 180px}
+label{display:block;font-size:.85rem;color:var(--muted)}
+input,select{width:100%;font:inherit;color:var(--ink);background:var(--input);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:3px}
+input:focus,select:focus,button:focus{outline:2px solid var(--accent);outline-offset:1px}
+button{font:inherit;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;padding:8px 14px;cursor:pointer}
+button.ghost{background:transparent;color:var(--accent)}
+button.x{background:transparent;border:1px solid var(--line);color:var(--muted);padding:6px 10px}
+.client{border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 10px}
+.client .head{display:flex;gap:8px;align-items:flex-end}
+.client .head label{flex:1}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px}
+.hint{font-size:.82rem;color:var(--muted);margin:.4em 0 0}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.8rem;color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;white-space:nowrap}
+.tag{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.8rem;font-weight:600;white-space:nowrap}
+.keep{background:var(--goodbg);color:var(--good)}
+.fix{background:var(--warnbg);color:var(--warn)}
+.go{background:var(--badbg);color:var(--bad)}
+.bar{height:8px;border-radius:4px;background:var(--line);margin-top:4px;min-width:60px}
+.bar span{display:block;height:100%;border-radius:4px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font-size:1.3rem}
+.stat small{color:var(--muted)}
+ul.advice{padding-left:1.2em;margin:.4em 0 0}
+ul.advice li{margin:.35em 0}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.note{font-size:.82rem;color:var(--muted)}
+.empty{color:var(--muted);font-style:italic}
+</style>
+</head>
+<body>
+<main>
+<h1>Which clients are worth keeping?</h1>
+<p class="lead">Rank your freelance clients by what they really pay per hour once calls, emails, revisions and invoice chasing are counted. See who to keep, who to re-price, and what letting one go would actually cost you. Everything runs in your browser and nothing is sent anywhere.</p>
+
+<section class="card">
+<h2>1. Your numbers</h2>
+<div class="row">
+<label>Period these figures cover
+<select id="months">
+<option value="1">Last 1 month</option>
+<option value="3" selected>Last 3 months</option>
+<option value="6">Last 6 months</option>
+<option value="12">Last 12 months</option>
+</select></label>
+<label>Your target hourly rate
+<input id="target" type="number" min="1" step="1" value="75" inputmode="decimal"></label>
+<label>Currency symbol
+<input id="cur" type="text" maxlength="3" value="$"></label>
+</div>
+<p class="hint">Target rate = what you'd quote a good new client today.</p>
+</section>
+
+<section class="card">
+<h2>2. Your clients</h2>
+<p class="hint" style="margin-top:0">For each client, enter what they paid you in the period and the hours you spent. Split the hours into the work itself and everything else (calls, emails, meetings, revisions beyond scope, chasing payments, waiting around). Estimates are fine.</p>
+<div id="clients"></div>
+<div class="actions">
+<button type="button" id="add">+ Add client</button>
+<button type="button" class="ghost" id="example">Load example</button>
+<button type="button" class="ghost" id="clear">Clear all</button>
+</div>
+</section>
+
+<section class="card" id="results">
+<h2>3. Results</h2>
+<div id="out"><p class="empty">Add at least one client with money and hours to see results.</p></div>
+<div class="actions">
+<button type="button" class="ghost" id="copy">Copy as CSV</button>
+<span id="copied" class="note" aria-live="polite"></span>
+</div>
+</section>
+
+<section class="card">
+<h2>How the verdicts work</h2>
+<ul class="advice">
+<li><b>Effective rate</b> = money received ÷ all hours (work + overhead).</li>
+<li><span class="tag keep">Keep</span> effective rate at least 90% of your target, payment usually within 2 weeks of the due date and stress below 4 out of 5.</li>
+<li><span class="tag fix">Re-price or fix</span> effective rate 60-89% of target, or one problem (slow payment, high overhead or high stress) on an otherwise decent client. The tool shows the rate that would bring them up to target at the same hours.</li>
+<li><span class="tag go">Consider letting go</span> effective rate under 60% of target, or two or more problems at once.</li>
+<li><b>Hours to replace</b> = the client's income ÷ your target rate: how much work at your target rate would earn the same money.</li>
+</ul>
+<p class="note">This is a planning aid, not financial advice. A verdict is a starting point for a decision only you can make: a low-paying client may still be worth keeping for portfolio, learning or relationship reasons.</p>
+</section>
+</main>
+
+<script>
+(function(){
+var list=document.getElementById('clients');
+var out=document.getElementById('out');
+var lastRows=[];
+
+function el(tag,attrs,html){var e=document.createElement(tag);if(attrs){for(var k in attrs){e.setAttribute(k,attrs[k]);}}if(html!==undefined){e.innerHTML=html;}return e;}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function num(v){var n=parseFloat(v);return isFinite(n)?n:0;}
+function cur(){return document.getElementById('cur').value||'';}
+function money(n){return cur()+Math.round(n).toLocaleString();}
+function rate(n){return cur()+(Math.round(n*10)/10).toLocaleString(undefined,{maximumFractionDigits:1});}
+
+function addClient(d){
+d=d||{};
+var box=el('div',{'class':'client'});
+box.innerHTML=
+'<div class="head"><label>Client name<input data-k="name" type="text" placeholder="e.g. Agency A"></label>'+
+'<button type="button" class="x" aria-label="Remove client">Remove</button></div>'+
+'<div class="grid">'+
+'<label>Money received<input data-k="paid" type="number" min="0" step="any" inputmode="decimal"></label>'+
+'<label>Work hours<input data-k="work" type="number" min="0" step="any" inputmode="decimal"></label>'+
+'<label>Overhead hours<input data-k="over" type="number" min="0" step="any" inputmode="decimal"></label>'+
+'<label>Avg days paid late<input data-k="late" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>'+
+'<label>Stress (1 low - 5 high)<select data-k="stress"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label>'+
+'</div>';
+var fields=box.querySelectorAll('[data-k]');
+for(var i=0;i<fields.length;i++){var k=fields[i].getAttribute('data-k');if(d[k]!==undefined){fields[i].value=d[k];}}
+box.querySelector('button.x').addEventListener('click',function(){box.remove();calc();});
+list.appendChild(box);
+}
+
+function read(){
+var rows=[];var boxes=list.querySelectorAll('.client');
+for(var i=0;i<boxes.length;i++){
+var r={};var f=boxes[i].querySelectorAll('[data-k]');
+for(var j=0;j<f.length;j++){r[f[j].getAttribute('data-k')]=f[j].value;}
+r.name=(r.name||'').trim()||('Client '+(i+1));
+r.paid=num(r.paid);r.work=num(r.work);r.over=num(r.over);r.late=num(r.late);r.stress=num(r.stress)||3;
+r.hours=r.work+r.over;
+if(r.paid>0&&r.hours>0){rows.push(r);}
+}
+return rows;
+}
+
+function calc(){
+var target=num(document.getElementById('target').value);
+var months=num(document.getElementById('months').value)||1;
+var rows=read();
+if(!rows.length||target<=0){out.innerHTML='<p class="empty">Add at least one client with money and hours (and a target rate) to see results.</p>';lastRows=[];return;}
+var totalPaid=0,totalHours=0;
+rows.forEach(function(r){totalPaid+=r.paid;totalHours+=r.hours;});
+rows.forEach(function(r){
+r.eff=r.paid/r.hours;
+r.pct=r.eff/target*100;
+r.share=r.paid/totalPaid*100;
+r.overPct=r.over/r.hours*100;
+r.needed=target*r.hours;
+r.raise=r.needed>r.paid?(r.needed/r.paid-1)*100:0;
+r.replaceHrs=r.paid/target;
+r.freed=r.hours-r.replaceHrs;
+var problems=[];
+if(r.late>14){problems.push('pays '+Math.round(r.late)+' days late');}
+if(r.overPct>=35){problems.push(Math.round(r.overPct)+'% of hours are overhead');}
+if(r.stress>=4){problems.push('high stress');}
+r.problems=problems;
+if(r.pct<60||problems.length>=2){r.verdict='go';}
+else if(r.pct<90||problems.length===1){r.verdict='fix';}
+else{r.verdict='keep';}
+});
+rows.sort(function(a,b){return b.eff-a.eff;});
+lastRows=rows;
+
+var avg=totalPaid/totalHours;
+var maxEff=rows[0].eff;
+var worst=rows[rows.length-1];
+var labels={keep:'Keep',fix:'Re-price or fix',go:'Consider letting go'};
+
+var h='<div class="stats">'+
+'<div class="stat"><small>Total income ('+months+' mo)</small><b>'+money(totalPaid)+'</b></div>'+
+'<div class="stat"><small>Total hours</small><b>'+Math.round(totalHours).toLocaleString()+'</b></div>'+
+'<div class="stat"><small>Average effective rate</small><b>'+rate(avg)+'/hr</b><small>'+Math.round(avg/target*100)+'% of your '+rate(target)+' target</small></div>'+
+'<div class="stat"><small>Income per month</small><b>'+money(totalPaid/months)+'</b></div>'+
+'</div>';
+
+h+='<div class="tablewrap"><table><thead><tr><th>#</th><th>Client</th><th class="num">Effective rate</th><th class="num">vs target</th><th class="num">Share of income</th><th class="num">Overhead</th><th>Verdict</th></tr></thead><tbody>';
+rows.forEach(function(r,i){
+var col=r.verdict==='keep'?'var(--good)':(r.verdict==='fix'?'var(--warn)':'var(--bad)');
+h+='<tr><td>'+(i+1)+'</td><td>'+esc(r.name)+'<div class="bar"><span style="width:'+Math.max(4,r.eff/maxEff*100).toFixed(1)+'%;background:'+col+'"></span></div></td>'+
+'<td class="num">'+rate(r.eff)+'/hr</td><td class="num">'+Math.round(r.pct)+'%</td><td class="num">'+Math.round(r.share)+'%</td><td class="num">'+Math.round(r.overPct)+'%</td>'+
+'<td><span class="tag '+r.verdict+'">'+labels[r.verdict]+'</span></td></tr>';
+});
+h+='</tbody></table></div>';
+
+h+='<h2 style="margin-top:18px">What this means</h2><ul class="advice">';
+rows.forEach(function(r){
+var line='<b>'+esc(r.name)+':</b> ';
+if(r.verdict==='keep'){
+line+='earns '+rate(r.eff)+'/hr, at or near your target. Protect this relationship.';
+if(r.problems.length){line+=' Watch: '+r.problems.join(', ')+'.';}
+}else{
+if(r.raise>0){line+='to reach your target at the same hours they would need to pay about '+money(r.needed/months)+' per month instead of '+money(r.paid/months)+' (+'+Math.round(r.raise)+'%). ';}
+if(r.problems.length){line+='Problems: '+r.problems.join(', ')+'. ';}
+if(r.overPct>=35){line+='Cutting overhead (one channel, fixed revision rounds, deposits) may fix more than a rate rise. ';}
+line+='Replacing their '+money(r.paid/months)+'/month at your target rate takes about '+(Math.round(r.replaceHrs/months*10)/10)+' hrs/month';
+if(r.freed>0){line+=', freeing roughly '+(Math.round(r.freed/months*10)/10)+' hrs/month';}
+line+='.';
+if(r.share>=40){line+=' They are '+Math.round(r.share)+'% of your income, so line up new work before making changes.';}
+}
+h+='<li>'+line+'</li>';
+});
+h+='</ul>';
+
+if(rows.length>1&&worst.verdict!=='keep'){
+var withoutPaid=totalPaid-worst.paid,withoutHours=totalHours-worst.hours;
+if(withoutHours>0){
+h+='<p class="note" style="margin-top:12px">Without <b>'+esc(worst.name)+'</b>, your average effective rate would be '+rate(withoutPaid/withoutHours)+'/hr instead of '+rate(avg)+'/hr, with '+Math.round(worst.hours/months)+' hours a month back to fill with better-paid work or rest.</p>';
+}
+}
+out.innerHTML=h;
+}
+
+function toCSV(){
+if(!lastRows.length){return '';}
+var q=function(v){v=String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+var lines=[['Rank','Client','Money received','Work hours','Overhead hours','Total hours','Effective rate','Percent of target','Share of income','Overhead percent','Avg days late','Stress','Verdict','Fee needed for target (period)','Hours to replace at target'].join(',')];
+var labels={keep:'Keep',fix:'Re-price or fix',go:'Consider letting go'};
+lastRows.forEach(function(r,i){
+lines.push([i+1,q(r.name),r.paid,r.work,r.over,r.hours,r.eff.toFixed(2),Math.round(r.pct),Math.round(r.share),Math.round(r.overPct),r.late,r.stress,labels[r.verdict],Math.round(r.needed),r.replaceHrs.toFixed(1)].join(','));
+});
+return lines.join('\n');
+}
+
+document.getElementById('copy').addEventListener('click',function(){
+var t=toCSV();var msg=document.getElementById('copied');
+if(!t){msg.textContent='Nothing to copy yet.';return;}
+var done=function(){msg.textContent='Copied. Paste into any spreadsheet.';};
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,function(){fallback(t);done();});}
+else{fallback(t);done();}
+});
+function fallback(t){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');}catch(e){}a.remove();}
+
+document.getElementById('add').addEventListener('click',function(){addClient();});
+document.getElementById('clear').addEventListener('click',function(){list.innerHTML='';addClient();calc();});
+document.getElementById('example').addEventListener('click',function(){
+list.innerHTML='';
+addClient({name:'Design agency (retainer)',paid:5400,work:58,over:8,late:0,stress:2});
+addClient({name:'Property company',paid:3600,work:48,over:27,late:30,stress:5});
+addClient({name:'Startup (project)',paid:4200,work:52,over:14,late:10,stress:3});
+addClient({name:'Local bakery',paid:900,work:14,over:9,late:5,stress:2});
+document.getElementById('months').value='3';document.getElementById('target').value='75';
+calc();
+});
+document.addEventListener('input',calc);
+document.addEventListener('change',calc);
+addClient();addClient();
+calc();
+})();
+</script>
+<p style="text-align:center;margin:2em 0;font:14px system-ui"><a href="../../">More free tools from PixelCo</a></p></body>
+</html>
